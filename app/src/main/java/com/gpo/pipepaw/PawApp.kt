@@ -7,10 +7,12 @@ import coil3.SingletonImageLoader
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import com.gpo.pipepaw.core.extractor.Yt
+import com.gpo.pipepaw.core.extractor.decoder.WebViewJsDecoder
 import com.gpo.pipepaw.core.settings.AppSettings
 import com.gpo.pipepaw.feature.player.Player
 import com.gpo.pipepaw.feature.subscriptions.Subscriptions
 import okhttp3.Dispatcher
+import org.schabi.newpipe.extractor.services.youtube.YoutubeApiDecoder
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -26,6 +28,11 @@ class PawApp : Application(), SingletonImageLoader.Factory {
         AppSettings.init(this)
         Subscriptions.init(this)
         Yt.init(this, http)
+        // Signatures and n solved on the phone (V8 in a WebView); the extractor falls back to
+        // PipePipe's remote decoder if this ever fails. Warmed off the main thread at start.
+        val decoder = WebViewJsDecoder(this)
+        YoutubeApiDecoder.setLocalDecoder(decoder)
+        Thread({ decoder.prewarm() }, "decoder-prewarm").apply { isDaemon = true }.start()
         Player.init(this)
     }
 

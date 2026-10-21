@@ -21,9 +21,9 @@
 ## 阶段 2 · 播放内核（从 PipePipeClient 移植成 Kotlin + Media3）
 
 - [x] `YoutubeHttpDataSource` 的 Kotlin 版（`YoutubeDataSource`，OkHttp + ResolvingDataSource）：`&range=` / `&rn=`、按客户端换 UA（Android / iOS）、移动端用 POST、WEB / TV 内嵌带 Origin / Referer。403 等 HTTP 和网络错误时重新解析、从原位置接着放（每个视频两次），和 PipePipe 的 PlayerErrorHandler 一样；用强制失败的请求在真机上验证过。
-- [ ] 本地 WebView JS 解码（`WebViewJavaScriptDecoder`），不再依赖远程解码 API。
-- [ ] PO token（`LocalDomPoTokenProvider`、`SharedWebViewRuntime`）。
-- [ ] SABR（`player/datasource/Sabr*`，约 2000 行）：登录后的 mweb 客户端需要。
+- [x] 本地 WebView JS 解码（`core/extractor/decoder`：`WebViewRuntime` + `WebViewJsDecoder`，yt-dlp 的 EJS 解码器放在 `assets/ejs`，Unlicense）。启动时在后台预热（约 3 秒）；Extractor 先问本地，失败就整个进程退回 PipePipe 的远程 API。`visionos` 拿到的是直链，平时用不上；切到 `tv_samsung` 实测 1 个 n、26 个签名 15ms 解完并正常播放。
+- [ ] PO token（`LocalDomPoTokenProvider`、`SharedWebViewRuntime` 的 SABR 桥）：BotGuard 在 WebView 里跑出 integrity token，再给每个视频铸 PO token；约 1000 行，外加 `WebViewRuntime` 加回调桥。只有 `mweb`（登录）和 web 系客户端需要；未登录的 `visionos` 不需要。等登录或 `visionos` 失效再做。
+- [ ] SABR（`player/datasource/Sabr*`，约 2000 行，含 UMP 协议解析和自己的 DataSource / MediaSource）：登录后的 mweb 客户端只给 SABR 流，没有直链。依赖 PO token，放在登录之后。
 - [x] MediaSession + 前台服务：后台播放、通知、蓝牙按键（±10 秒），点通知回到展开的播放器；设置 › 播放 › 后台播放，关掉时离开即暂停、回来接着放。
 - [ ] 全屏和画中画：搬 PiliPaw 的 `FullscreenBack`、`DoubleTapSeek`、`HoldSpeed`、`SeekBar` / `SeekPreview`（YouTube 的 storyboard = `previewFrames`）、`Subtitles`、画质和倍速面板。
 - [ ] 性能：覆盖层的插值从组合期挪到 layout / draw 期。
