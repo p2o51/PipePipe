@@ -83,6 +83,9 @@ import com.gpo.pipepaw.core.extractor.ChannelItem
 import com.gpo.pipepaw.core.extractor.toVideo
 import com.gpo.pipepaw.core.settings.AppSettings
 import com.gpo.pipepaw.core.util.Fmt
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInWindow
+import com.gpo.pipepaw.feature.listen.ListenScreen
 import com.gpo.pipepaw.feature.mute.Mutes
 import com.gpo.pipepaw.feature.library.AddToPlaylistSheet
 import com.gpo.pipepaw.feature.library.Library
@@ -182,6 +185,7 @@ fun PlayerOverlayHost() {
     val feedback = remember { GestureFeedback() }
     val haptics = LocalHapticFeedback.current
     val seek = rememberSeekState()
+    var pictureRect by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     val frames = remember(session.info) { pickFrameset(session.info?.previewFrames.orEmpty(), PreviewMinWidthPx) }
 
     LaunchedEffect(expanded) {
@@ -360,13 +364,14 @@ fun PlayerOverlayHost() {
                         .size(videoW, videoH)
                         .clip(ContinuousRoundedCornerShape(videoCorner))
                         .background(Color.Black)
+                        .onGloballyPositioned { pictureRect = it.boundsInWindow() }
                         .clickable(enabled = p < 0.5f) { Player.expanded = true }
                         .draggable(drag, Orientation.Vertical, onDragStarted = { dragging = true }, onDragStopped = { settle(it) })
                         // Open: double tap skips, a hold speeds up (a tap does nothing, nothing to show).
                         .then(if (expanded) Modifier.pictureGestures(feedback, haptics) {} else Modifier),
                 ) {
                     Picture(session)
-                    if (!Player.fullscreen) SubtitleOverlay(big = false)
+                    if (!Player.fullscreen && !Player.audioOnly) SubtitleOverlay(big = false)
                     if (expanded) {
                         DoubleTapSeekLayer(feedback.skip, big = false)
                         HoldSpeedPill(feedback, big = false, modifier = Modifier.align(Alignment.Center))
@@ -374,6 +379,8 @@ fun PlayerOverlayHost() {
                 }
                 // Over the picture: the scrub preview rides above the seek bar's thumb.
                 if (p > 0.99f && !Player.fullscreen) SeekBubbleLayer(seek, frames, big = false)
+                // 仅听声音: the listen page over the open player; the picture flies into its cover.
+                if (Player.audioOnly && p > 0.99f) ListenScreen(from = { pictureRect })
             }
         }
         // Over everything, the overlay included: it takes the video surface while it is up.
@@ -385,6 +392,11 @@ private const val FlingVelocity = 1200f
 
 @Composable
 private fun BoxScope.Picture(session: Player.Session) {
+    // 仅听声音 draws no picture: the cover stands in (the mini bar, the flight's start).
+    if (Player.audioOnly) {
+        NetImage(session.thumbnail, Modifier.fillMaxSize(), shape = ContinuousRoundedCornerShape(0.dp), thumbWidth = null)
+        return
+    }
     // Fullscreen owns the one video surface while it is up.
     if (session.info != null && session.error == null && !Player.fullscreen) {
         ContentFrame(
@@ -652,6 +664,11 @@ private fun VideoActions(info: StreamInfo) {
             Icon(YoinSymbols.Add, null, Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
             Text("播放列表")
+        }
+        FilledTonalButton(onClick = { Player.changeAudioOnly(true) }) {
+            Icon(YoinSymbols.Headphones, null, Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("仅听声音")
         }
     }
     if (addSheet) AddToPlaylistSheet(video, onDismiss = { addSheet = false })
