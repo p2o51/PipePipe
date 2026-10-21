@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- PipePaw's field (placeholder until the mark is designed): a deep crimson, not YouTube's red. -->
+    <color name="splash_background">#FF7A1C2E</color>
+    <color name="paw_mark">#FFFFE6D5</color>
+</resources>
