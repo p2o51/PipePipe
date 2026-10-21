@@ -22,6 +22,26 @@ object Fmt {
         else String.format(Locale.ROOT, "%d:%02d", m, s)
     }
 
+    /**
+     * Epoch millis → 刚刚 / 5分钟前 / 3小时前 / 2天前 / 4周前 / 3个月前 / 2年前. Unknown (≤ 0) → "".
+     * The extractor asks YouTube in Zulu (so titles are never auto-translated), so its own
+     * relative text is unusable; we date the parsed instant ourselves.
+     */
+    fun ago(epochMillis: Long, now: Long = System.currentTimeMillis()): String {
+        if (epochMillis <= 0) return ""
+        val minutes = ((now - epochMillis) / 60_000).coerceAtLeast(0)
+        val days = minutes / (60 * 24)
+        return when {
+            minutes < 1 -> "刚刚"
+            minutes < 60 -> "${minutes}分钟前"
+            minutes < 60 * 24 -> "${minutes / 60}小时前"
+            days < 7 -> "${days}天前"
+            days < 30 -> "${days / 7}周前"
+            days < 365 -> "${days / 30}个月前"
+            else -> "${days / 365}年前"
+        }
+    }
+
     private fun trim(v: Double): String {
         val r = String.format(Locale.ROOT, "%.1f", v)
         return if (r.endsWith(".0")) r.dropLast(2) else r

@@ -1,6 +1,7 @@
 package com.gpo.pipepaw.core.extractor
 
 import androidx.compose.runtime.Immutable
+import com.gpo.pipepaw.core.util.Fmt
 import kotlinx.serialization.Serializable
 import org.schabi.newpipe.extractor.InfoItem
 import org.schabi.newpipe.extractor.channel.ChannelInfoItem
@@ -21,9 +22,9 @@ data class VideoItem(
     val channelAvatar: String,
     val durationSec: Long,
     val views: Long,
-    /** YouTube's own relative text ("3 days ago"), shown as is until we date it ourselves. */
+    /** Relative upload time ("3天前"), dated by us from [uploadedAt]; empty when unknown. */
     val uploaded: String,
-    /** Epoch millis when the extractor knows the date (RSS feeds do), else 0. Sorts the 订阅 feed. */
+    /** Epoch millis when the extractor knows the date (parsed or from RSS), else 0. Sorts the 订阅 feed. */
     val uploadedAt: Long,
     val isLive: Boolean,
     val isShort: Boolean,
@@ -50,21 +51,24 @@ sealed interface ListItem {
     data class Channel(val channel: ChannelItem) : ListItem { override val key get() = "c:" + channel.url }
 }
 
-fun StreamInfoItem.toVideo(): VideoItem = VideoItem(
-    url = url,
-    title = name.orEmpty(),
-    thumbnail = thumbnailUrl.orEmpty(),
-    channelName = uploaderName.orEmpty(),
-    channelUrl = uploaderUrl.orEmpty(),
-    channelAvatar = uploaderAvatarUrl.orEmpty(),
-    durationSec = duration,
-    views = viewCount,
-    uploaded = textualUploadDate.orEmpty(),
-    uploadedAt = uploadDate?.offsetDateTime()?.toInstant()?.toEpochMilli() ?: 0L,
-    isLive = streamType == StreamType.LIVE_STREAM || streamType == StreamType.AUDIO_LIVE_STREAM,
-    isShort = isShortFormContent,
-    channelVerified = isUploaderVerified,
-)
+fun StreamInfoItem.toVideo(): VideoItem {
+    val at = uploadDate?.offsetDateTime()?.toInstant()?.toEpochMilli() ?: 0L
+    return VideoItem(
+        url = url,
+        title = name.orEmpty(),
+        thumbnail = thumbnailUrl.orEmpty(),
+        channelName = uploaderName.orEmpty(),
+        channelUrl = uploaderUrl.orEmpty(),
+        channelAvatar = uploaderAvatarUrl.orEmpty(),
+        durationSec = duration,
+        views = viewCount,
+        uploaded = Fmt.ago(at),
+        uploadedAt = at,
+        isLive = streamType == StreamType.LIVE_STREAM || streamType == StreamType.AUDIO_LIVE_STREAM,
+        isShort = isShortFormContent,
+        channelVerified = isUploaderVerified,
+    )
+}
 
 fun ChannelInfoItem.toChannel(): ChannelItem = ChannelItem(
     url = url,

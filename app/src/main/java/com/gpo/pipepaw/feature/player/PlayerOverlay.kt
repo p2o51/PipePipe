@@ -430,7 +430,7 @@ private fun Details(session: Player.Session, info: StreamInfo?, modifier: Modifi
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (info.viewCount >= 0) ValueLabel(Fmt.count(info.viewCount), "次观看")
                 if (info.likeCount >= 0) ValueLabel(Fmt.count(info.likeCount), "赞")
-                info.textualUploadDate?.takeIf { it.isNotEmpty() }?.let {
+                Fmt.ago(info.uploadDate?.offsetDateTime()?.toInstant()?.toEpochMilli() ?: 0L).takeIf { it.isNotEmpty() }?.let {
                     Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
