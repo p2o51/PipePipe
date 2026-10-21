@@ -43,6 +43,7 @@ fun SettingsList(title: String, showBack: Boolean = false, bottom: Dp = 0.dp) {
     val hideShorts by AppSettings.hideShorts.state.collectAsState()
     val autoPlay by AppSettings.autoPlay.state.collectAsState()
     val backgroundPlay by AppSettings.backgroundPlay.state.collectAsState()
+    val autoPip by AppSettings.autoPip.state.collectAsState()
     val height by AppSettings.preferredHeight.state.collectAsState()
     val fame by FameMode.scopeKey.state.collectAsState()
 
@@ -75,6 +76,7 @@ fun SettingsList(title: String, showBack: Boolean = false, bottom: Dp = 0.dp) {
         SettingsGroup("播放") {
             item { SettingsSwitchItem("自动播放", autoPlay, { AppSettings.set(AppSettings.autoPlay, it) }, icon = YoinSymbols.PlayCircle) }
             item { SettingsSwitchItem("后台播放", backgroundPlay, { AppSettings.set(AppSettings.backgroundPlay, it) }, icon = YoinSymbols.VolumeUp) }
+            item { SettingsSwitchItem("自动画中画", autoPip, { AppSettings.set(AppSettings.autoPip, it) }, icon = PiliSymbols.Pip) }
             item {
                 SettingsChoiceItem(
                     title = "默认画质",

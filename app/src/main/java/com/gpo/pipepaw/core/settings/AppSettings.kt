@@ -50,6 +50,7 @@ object AppSettings {
     val preferredHeight = key("preferred_height", 1080)
     val autoPlay = key("auto_play", true)
     val backgroundPlay = key("background_play", true)
+    val autoPip = key("auto_pip", false)
     val defaultSpeed = key("speed", 1.0f)
 
     fun init(context: Context) {

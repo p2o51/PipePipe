@@ -1,6 +1,9 @@
 package com.gpo.pipepaw.feature.player
 
 import androidx.activity.compose.PredictiveBackHandler
+import android.os.Build
+import androidx.activity.compose.LocalActivity
+import androidx.activity.ComponentActivity
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
@@ -126,6 +129,24 @@ fun miniPlayerInset(): Dp = if (Player.session != null) MiniHeight + MiniMargin 
 @Composable
 fun PlayerOverlayHost() {
     val session = Player.session ?: return
+    val activity = LocalActivity.current as? ComponentActivity
+    val inPip = rememberIsInPip(activity)
+    // 自动画中画: leaving the app with the player open and playing floats the picture (Android 12+).
+    val autoPip by AppSettings.autoPip.state.collectAsState()
+    val pipTitle = session.title
+    LaunchedEffect(activity, autoPip, Player.isPlaying, Player.expanded, Player.videoAspect, pipTitle) {
+        if (activity == null || !pipSupported(activity) || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return@LaunchedEffect
+        runCatching {
+            activity.setPictureInPictureParams(
+                pipParams(Player.videoAspect, autoEnter = autoPip && Player.isPlaying && Player.expanded, title = pipTitle),
+            )
+        }
+    }
+    // In the floating window: the picture alone, nothing else of the app.
+    if (inPip) {
+        PipPicture(session)
+        return
+    }
     val nav = LocalNavigator.current
     val onShell = nav.backStack.lastOrNull() == Route.Main
     val scope = rememberCoroutineScope()
@@ -539,4 +560,20 @@ private fun Description(info: StreamInfo) {
             .animateContentSize(YoinMotion.defaultSpatialSpec())
             .padding(16.dp),
     )
+}
+
+/** The picture-in-picture window's content: the video on black, nothing else. */
+@Composable
+private fun PipPicture(session: Player.Session) {
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
+        if (session.info != null && session.error == null) {
+            ContentFrame(
+                player = Player.exo,
+                modifier = Modifier.fillMaxSize(),
+                surfaceType = SURFACE_TYPE_TEXTURE_VIEW,
+                contentScale = ContentScale.Fit,
+                shutter = {},
+            )
+        }
+    }
 }

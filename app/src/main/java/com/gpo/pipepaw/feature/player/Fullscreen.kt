@@ -278,6 +278,12 @@ private fun TopBar(title: String, height: Dp, turned: Boolean, reveal: () -> Flo
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
+        val activity = LocalActivity.current
+        if (activity != null && pipSupported(activity)) {
+            IconButton(onClick = { enterPip(activity, Player.videoAspect, title = title) }, shapes = IconButtonDefaults.shapes()) {
+                Icon(PiliSymbols.Pip, contentDescription = "画中画")
+            }
+        }
     }
 }
 
