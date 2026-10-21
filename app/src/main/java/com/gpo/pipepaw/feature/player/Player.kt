@@ -10,6 +10,7 @@ import androidx.media3.common.C
 import androidx.media3.common.PlaybackException
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.MediaSession
 import com.gpo.pipepaw.core.extractor.PawDownloader
 import com.gpo.pipepaw.core.extractor.VideoItem
 import com.gpo.pipepaw.core.extractor.Yt
@@ -66,6 +67,8 @@ object Player {
                 /* handleAudioFocus = */ true,
             )
             .setHandleAudioBecomingNoisy(true)
+            .setSeekBackIncrementMs(10_000)
+            .setSeekForwardIncrementMs(10_000)
             .build()
             .apply {
                 addListener(object : Media3Player.Listener {
@@ -88,6 +91,33 @@ object Player {
 
     fun init(context: Context) {
         app = context.applicationContext
+        scope.launch { AppSettings.backgroundPlay.state.collect { syncBackgroundHost() } }
+    }
+
+    /**
+     * The media session (notification, lock screen, Bluetooth keys). Made with the player and
+     * kept for the process; [PlaybackService] borrows it while background play wants it.
+     */
+    private val mediaSession: MediaSession? by lazy {
+        runCatching {
+            MediaSession.Builder(app, exo)
+                .setId("pipepaw-player")
+                .setMediaButtonPreferences(PlaybackService.buttons)
+                .setBitmapLoader(CoilBitmapLoader(app))
+                .setSessionActivity(PlaybackService.sessionActivity(app))
+                .build()
+        }.onFailure { android.util.Log.w("PipePaw", "media session", it) }.getOrNull()
+    }
+    private var hosted = false
+
+    /** Hands the session to [PlaybackService] while a video is open and 后台播放 is on. */
+    private fun syncBackgroundHost() {
+        if (session == null && !hosted) return
+        val s = mediaSession ?: return
+        val want = session != null && AppSettings.backgroundPlay.value
+        if (want == hosted) return
+        hosted = want
+        if (want) PlaybackService.attach(app, s) else PlaybackService.detach(s)
     }
 
     /** Opens [url] in the player, expanded. Tapping the video that is already playing just expands it. */
@@ -99,6 +129,7 @@ object Player {
         exo.clearMediaItems()
         durationMs = 0
         session = Session(url, preview)
+        syncBackgroundHost()
         loadJob = scope.launch {
             try {
                 val info = Yt.stream(url)
@@ -138,5 +169,6 @@ object Player {
         exo.clearMediaItems()
         expanded = false
         session = null
+        syncBackgroundHost()
     }
 }

@@ -44,6 +44,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -74,6 +77,7 @@ import androidx.media3.ui.compose.ContentFrame
 import androidx.media3.ui.compose.SURFACE_TYPE_TEXTURE_VIEW
 import com.gpo.pipepaw.core.extractor.ChannelItem
 import com.gpo.pipepaw.core.extractor.toVideo
+import com.gpo.pipepaw.core.settings.AppSettings
 import com.gpo.pipepaw.core.util.Fmt
 import com.gpo.pipepaw.feature.subscriptions.Subscriptions
 import com.gpo.pipepaw.navigation.LocalNavigator
@@ -143,6 +147,27 @@ fun PlayerOverlayHost() {
             scope.launch { progress.animateTo(from, spatial) }
             throw e
         }
+    }
+
+    // 后台播放 off: leaving the app pauses, coming back resumes what was playing.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        var resumeOnReturn = false
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_STOP -> if (!AppSettings.backgroundPlay.value && Player.isPlaying) {
+                    Player.exo.pause()
+                    resumeOnReturn = true
+                }
+                Lifecycle.Event.ON_START -> if (resumeOnReturn) {
+                    resumeOnReturn = false
+                    Player.exo.play()
+                }
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     val view = LocalView.current

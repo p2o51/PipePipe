@@ -3,6 +3,8 @@ package com.gpo.pipepaw
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import com.gpo.pipepaw.feature.player.PlaybackService
+import com.gpo.pipepaw.feature.player.Player
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -78,6 +80,11 @@ class MainActivity : ComponentActivity() {
 
     private fun handleIntent(intent: Intent?) {
         intent ?: return
+        if (intent.getBooleanExtra(PlaybackService.EXTRA_RESUME, false)) {
+            // The media notification: the player is already open, bring it up.
+            if (Player.session != null) Player.expanded = true
+            return
+        }
         val url = when (intent.action) {
             Intent.ACTION_SEND -> LinkRouter.firstLink(intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString().orEmpty())
             Intent.ACTION_VIEW -> intent.dataString

@@ -24,7 +24,7 @@
 - [ ] 本地 WebView JS 解码（`WebViewJavaScriptDecoder`），不再依赖远程解码 API。
 - [ ] PO token（`LocalDomPoTokenProvider`、`SharedWebViewRuntime`）。
 - [ ] SABR（`player/datasource/Sabr*`，约 2000 行）：登录后的 mweb 客户端需要。
-- [ ] MediaSession + 前台服务：后台播放、通知、蓝牙按键。
+- [x] MediaSession + 前台服务：后台播放、通知、蓝牙按键（±10 秒），点通知回到展开的播放器；设置 › 播放 › 后台播放，关掉时离开即暂停、回来接着放。
 - [ ] 全屏和画中画：搬 PiliPaw 的 `FullscreenBack`、`DoubleTapSeek`、`HoldSpeed`、`SeekBar` / `SeekPreview`（YouTube 的 storyboard = `previewFrames`）、`Subtitles`、画质和倍速面板。
 - [ ] 性能：覆盖层的插值从组合期挪到 layout / draw 期。
 
