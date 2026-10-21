@@ -213,6 +213,7 @@ internal fun FullscreenPlayer(session: Player.Session) {
                         shutter = {},
                     )
                 }
+                SubtitleOverlay(big = true)
             }
             // Over the picture (its video view would take the touches), under the bars: taps
             // anywhere, the picture or the black around it, show and hide the controls.
@@ -308,6 +309,21 @@ private fun BottomBar(seek: SeekState, height: Dp, turned: Boolean, reveal: () -
         TimeLabels(seek, OnVideoVariant, Modifier.padding(start = 6.dp, end = 12.dp))
         PawSeekBar(seek, VideoTrackInk, onPoke, Modifier.weight(1f))
         Spacer(Modifier.width(10.dp))
+        var sheet by remember { mutableStateOf(false) }
+        val open = {
+            sheet = true
+            onPoke()
+        }
+        if (Player.subtitleTracks.isNotEmpty()) {
+            IconButton(onClick = open, shapes = IconButtonDefaults.shapes(), modifier = Modifier.size(44.dp)) {
+                Icon(PiliSymbols.Subtitles, contentDescription = "字幕", tint = if (Player.subtitleIndex >= 0) OnVideo else OnVideoVariant)
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Pill(if (Player.speed == 1f) "倍速" else speedLabel(Player.speed), open)
+            Pill(qualityLabel(Player.currentHeight), open)
+        }
+        if (sheet) PlaybackSheet(onDismiss = { sheet = false })
         IconButton(onClick = { Player.fullscreen = false }, shapes = IconButtonDefaults.shapes(), modifier = Modifier.size(44.dp)) {
             Icon(PiliSymbols.FullscreenExit, contentDescription = "退出全屏")
         }
@@ -368,4 +384,17 @@ private val CardGap = 6.dp
 private class PictureCardShape(private val rect: Rect, private val radius: Float) : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
         Outline.Rounded(RoundRect(rect, CornerRadius(radius, radius)))
+}
+
+/** A small label button on a translucent white plate (倍速, 画质). */
+@Composable
+private fun Pill(text: String, onClick: () -> Unit) {
+    androidx.compose.material3.Surface(
+        onClick = onClick,
+        shape = com.gpo.pipepaw.ui.theme.YoinShapeTokens.Full,
+        color = OnVideo.copy(alpha = 0.16f),
+        contentColor = OnVideo,
+    ) {
+        Text(text, style = MaterialTheme.typography.labelLarge, maxLines = 1, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
+    }
 }

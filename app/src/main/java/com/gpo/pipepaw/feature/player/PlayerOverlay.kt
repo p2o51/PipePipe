@@ -309,6 +309,7 @@ fun PlayerOverlayHost() {
                         .then(if (expanded) Modifier.pictureGestures(feedback, haptics) {} else Modifier),
                 ) {
                     Picture(session)
+                    if (!Player.fullscreen) SubtitleOverlay(big = false)
                     if (expanded) {
                         DoubleTapSeekLayer(feedback.skip, big = false)
                         HoldSpeedPill(feedback, big = false, modifier = Modifier.align(Alignment.Center))
@@ -441,6 +442,11 @@ private fun Controls(seek: SeekState, onCollapse: () -> Unit, modifier: Modifier
             Spacer(Modifier.weight(1f))
             TimeLabels(seek, MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
+            var sheet by remember { mutableStateOf(false) }
+            IconButton(onClick = { sheet = true }, shapes = IconButtonDefaults.shapes()) {
+                Icon(YoinSymbols.Settings, "播放设置")
+            }
+            if (sheet) PlaybackSheet(onDismiss = { sheet = false })
             IconButton(onClick = { Player.fullscreen = true }, shapes = IconButtonDefaults.shapes()) {
                 Icon(PiliSymbols.Fullscreen, "全屏")
             }

@@ -3,6 +3,7 @@ package com.gpo.pipepaw.feature.player
 import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -73,7 +74,64 @@ object Player {
     var boosting by mutableStateOf(false)
         private set
 
+    /** Heights the video offers (descending), the one playing, the subtitle tracks and the one on (-1: off). */
+    var heights by mutableStateOf<List<Int>>(emptyList())
+        private set
+    var currentHeight by mutableIntStateOf(0)
+        private set
+    var subtitleTracks by mutableStateOf<List<SubtitleTrack>>(emptyList())
+        private set
+    var subtitleIndex by mutableIntStateOf(-1)
+        private set
+    var cues by mutableStateOf<List<Cue>>(emptyList())
+        private set
+    private var subtitleJob: Job? = null
+
+    /** Re-resolves the video at [height] (0 = highest) and picks up where it was. */
+    fun changeQuality(height: Int) {
+        val s = session ?: return
+        val info = s.info ?: return
+        val position = exo.currentPosition
+        val resume = exo.playWhenReady
+        scope.launch {
+            try {
+                val resolved = withContext(Dispatchers.Default) { StreamResolver.resolve(info, upstream, height) }
+                if (session?.url != s.url) return@launch
+                exo.setMediaSource(resolved.source, position)
+                exo.prepare()
+                exo.playWhenReady = resume
+                currentHeight = resolved.video?.height ?: 0
+            } catch (e: Throwable) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+            }
+        }
+    }
+
+    /** Turns subtitle track [index] on (-1: off); the cues load in the background. */
+    fun chooseSubtitle(index: Int) {
+        subtitleJob?.cancel()
+        subtitleIndex = index
+        cues = emptyList()
+        val track = subtitleTracks.getOrNull(index) ?: return
+        subtitleJob = scope.launch {
+            val loaded = withContext(Dispatchers.IO) { runCatching { Subtitles.load(track) }.getOrDefault(emptyList()) }
+            if (subtitleIndex == index) cues = loaded
+        }
+    }
+
+    private fun resetTracks(info: StreamInfo?) {
+        subtitleJob?.cancel()
+        subtitleIndex = -1
+        cues = emptyList()
+        subtitleTracks = Subtitles.tracks(info?.subtitles.orEmpty())
+        heights = info?.videoOnlyStreams.orEmpty().filter { it.itagItem != null }.map { it.height }.filter { it > 0 }.distinct().sortedDescending()
+        currentHeight = 0
+    }
+
+    private var speedChosen = false
+
     fun changeSpeed(value: Float) {
+        speedChosen = true
         speed = value
         if (!boosting) exo.setPlaybackSpeed(value)
     }
@@ -148,7 +206,7 @@ object Player {
                 if (session?.url != s.url) return@launch
                 session = Session(s.url, s.preview, info)
                 val resolved = withContext(Dispatchers.Default) {
-                    StreamResolver.resolve(info, upstream, AppSettings.preferredHeight.value)
+                    StreamResolver.resolve(info, upstream, currentHeight.takeIf { it > 0 } ?: AppSettings.preferredHeight.value)
                 }
                 exo.setMediaSource(resolved.source, position)
                 exo.prepare()
@@ -201,6 +259,7 @@ object Player {
         exo.clearMediaItems()
         durationMs = 0
         recoveries = 0
+        resetTracks(null)
         session = Session(url, preview)
         syncBackgroundHost()
         loadJob = scope.launch {
@@ -208,11 +267,14 @@ object Player {
                 val info = Yt.stream(url)
                 if (session?.url != url) return@launch
                 session = Session(url, preview, info)
+                resetTracks(info)
                 val resolved = withContext(Dispatchers.Default) {
                     StreamResolver.resolve(info, upstream, AppSettings.preferredHeight.value)
                 }
+                currentHeight = resolved.video?.height ?: 0
                 exo.setMediaSource(resolved.source)
-                speed = AppSettings.defaultSpeed.value
+                // The speed picked for the last video carries on (the setting's default before that).
+                if (!speedChosen) speed = AppSettings.defaultSpeed.value
                 exo.setPlaybackSpeed(speed)
                 exo.prepare()
                 exo.playWhenReady = AppSettings.autoPlay.value
