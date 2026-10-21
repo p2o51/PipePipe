@@ -53,7 +53,9 @@ object Yt {
     // ── Search ──────────────────────────────────────────────────────────────
 
     suspend fun search(query: String, cursor: String?): Page<ListItem> = io {
-        val handler = service.searchQHFactory.fromQuery(query)
+        // PipePipe's YouTube filters throw without a content filter; item 0 is "all", as its client defaults to.
+        val factory = service.searchQHFactory
+        val handler = factory.fromQuery(query, listOf(factory.getFilterItem(0)), null)
         if (cursor == null) {
             val info = SearchInfo.getInfo(service, handler)
             page(info.relatedItems.mapNotNull { it.toListItem() }.filterShorts(), info.nextPage)
