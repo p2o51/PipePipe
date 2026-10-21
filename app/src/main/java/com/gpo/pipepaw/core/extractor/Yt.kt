@@ -20,6 +20,10 @@ import org.schabi.newpipe.extractor.search.SearchInfo
 import org.schabi.newpipe.extractor.stream.StreamInfo
 import org.schabi.newpipe.extractor.stream.StreamInfoItem
 import java.util.Locale
+import com.gpo.pipepaw.core.account.Accounts
+import com.gpo.pipepaw.core.account.Profile
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 import org.schabi.newpipe.extractor.Page as ExtractorPage
@@ -41,10 +45,15 @@ object Yt {
         val country = AppSettings.contentCountry.value.ifEmpty { locale.country.ifEmpty { "US" } }
         NewPipe.init(downloader, Localization.fromLocale(locale), ContentCountry(country))
         // Signed out: the client PipePipe defaults to (plain stream URLs, no SABR, no PO token).
-        // The signature / n-parameter decoder falls back to PipePipe's API until the local
-        // WebView decoder is ported (docs/PLAN.md, 播放内核).
         NewPipe.setYoutubePlayerClient("visionos")
+        // The signed-in account's cookies go with the extractor's account calls (it builds the
+        // SAPISIDHASH authorization from them); signed out there are none.
+        accountScope.launch {
+            Accounts.youtube.collect { profile -> service.tokens = (profile as? Profile.SignedIn)?.cookies }
+        }
     }
+
+    private val accountScope = MainScope()
 
     // ── Streams ─────────────────────────────────────────────────────────────
 

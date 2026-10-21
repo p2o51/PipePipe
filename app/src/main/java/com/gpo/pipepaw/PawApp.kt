@@ -35,6 +35,7 @@ class PawApp : Application(), SingletonImageLoader.Factory {
         YoutubeApiDecoder.setLocalDecoder(decoder)
         Thread({ decoder.prewarm() }, "decoder-prewarm").apply { isDaemon = true }.start()
         Player.init(this)
+        com.gpo.pipepaw.feature.account.SignIn.refresh()
     }
 
     /** Thumbnails come from a handful of i.ytimg / ggpht hosts: lift OkHttp's 5-per-host cap. */

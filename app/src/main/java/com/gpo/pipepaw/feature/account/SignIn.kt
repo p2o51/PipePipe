@@ -1,6 +1,7 @@
 package com.gpo.pipepaw.feature.account
 
 import android.annotation.SuppressLint
+import android.util.Log
 import android.webkit.CookieManager
 import android.webkit.WebStorage
 import android.webkit.WebView
@@ -21,6 +22,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.gpo.pipepaw.core.account.Accounts
 import com.gpo.pipepaw.core.account.Profile
+import com.gpo.pipepaw.core.extractor.YtAccount
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import com.gpo.pipepaw.navigation.LocalNavigator
 import com.gpo.pipepaw.ui.components.PawTopBar
 import com.gpo.pipepaw.ui.components.rememberToast
@@ -42,6 +46,27 @@ object SignIn {
 
     /** youtube.com's cookies as the WebView holds them now. */
     fun youtubeCookies(): String? = CookieManager.getInstance().getCookie("https://www.youtube.com")
+
+    private val scope = MainScope()
+
+    /**
+     * The WebView found a session: sign in with its [cookies] at once, then fill in who it is
+     * (name, handle, avatar) when YouTube answers. Also refreshes a stored profile at start.
+     */
+    fun complete(cookies: String) {
+        Accounts.setYouTube(Profile.SignedIn(cookies = cookies))
+        refresh()
+    }
+
+    /** Re-reads who the signed-in account is (a new avatar, a renamed channel). Quiet on failure. */
+    fun refresh() {
+        val signedIn = Accounts.youtube.value as? Profile.SignedIn ?: return
+        scope.launch {
+            val me = runCatching { YtAccount.me() }.onFailure { Log.w("SignIn", "account_menu", it) }.getOrNull() ?: return@launch
+            if ((Accounts.youtube.value as? Profile.SignedIn)?.cookies != signedIn.cookies) return@launch
+            Accounts.setYouTube(signedIn.copy(name = me.name, handle = me.handle, avatar = me.avatar))
+        }
+    }
 
     /** Back to signed out: the profile, the WebView's cookies and its storage all go. */
     fun signOut() {
@@ -91,7 +116,7 @@ fun SignInScreen() {
                             if (SignIn.hasSession(cookies)) {
                                 done = true
                                 CookieManager.getInstance().flush()
-                                Accounts.setYouTube(Profile.SignedIn(cookies = cookies!!))
+                                SignIn.complete(cookies!!)
                                 toast("已登录")
                                 nav.pop()
                             }
