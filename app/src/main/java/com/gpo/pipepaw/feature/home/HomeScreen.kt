@@ -73,7 +73,14 @@ class HomeViewModel : ViewModel() {
     private suspend fun load(): Page<VideoItem> = coroutineScope {
         val channels = Subscriptions.channels.value
         val gate = Semaphore(6)
-        val results = channels.map { c -> async { gate.withPermit { runCatching { Yt.latest(c.url) } } } }.awaitAll()
+        // The channel-page fallback carries no uploader avatar: the subscription has it.
+        val results = channels.map { c ->
+            async {
+                gate.withPermit {
+                    runCatching { Yt.latest(c.url).map { if (it.channelAvatar.isEmpty()) it.copy(channelAvatar = c.avatar) else it } }
+                }
+            }
+        }.awaitAll()
         // One channel failing still shows the rest; all of them failing is the page's error.
         if (results.isNotEmpty() && results.all { it.isFailure }) throw results.first().exceptionOrNull()!!
         val all = results.flatMap { it.getOrDefault(emptyList()) }.filterNot { it.isShort }.sortedByDescending { it.uploadedAt }
