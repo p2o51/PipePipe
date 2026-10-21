@@ -22,4 +22,7 @@ sealed interface Route : NavKey {
 
     /** Google's sign-in page in a WebView (feature/account). */
     @Serializable data object SignIn : Route
+
+    /** A signed-in account list ([com.gpo.pipepaw.feature.account.AccountList] name). */
+    @Serializable data class AccountVideos(val list: String) : Route
 }

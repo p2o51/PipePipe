@@ -83,6 +83,11 @@ import com.gpo.pipepaw.core.extractor.ChannelItem
 import com.gpo.pipepaw.core.extractor.toVideo
 import com.gpo.pipepaw.core.settings.AppSettings
 import com.gpo.pipepaw.core.util.Fmt
+import com.gpo.pipepaw.ui.components.rememberToast
+import com.gpo.pipepaw.ui.components.friendlyMessage
+import com.gpo.pipepaw.core.account.AccountSubscriptions
+import com.gpo.pipepaw.core.account.Profile
+import com.gpo.pipepaw.core.account.Accounts
 import com.gpo.pipepaw.feature.subscriptions.Subscriptions
 import com.gpo.pipepaw.navigation.LocalNavigator
 import com.gpo.pipepaw.navigation.Route
@@ -524,14 +529,32 @@ private fun Details(session: Player.Session, info: StreamInfo?, modifier: Modifi
     }
 }
 
+/**
+ * 订阅 / 已订阅. Signed out it is the local list; signed in it is the account's (a write, so a
+ * dry run in debug builds, which says so and changes nothing).
+ */
 @Composable
 fun SubscribeButton(channel: ChannelItem) {
+    val profile by Accounts.youtube.collectAsState()
     val subs by Subscriptions.channels.collectAsState()
-    val subscribed = subs.any { it.url == channel.url }
+    val accountIds by AccountSubscriptions.ids.collectAsState()
+    val scope = rememberCoroutineScope()
+    val toast = rememberToast()
+    val signedIn = profile is Profile.SignedIn
+    val subscribed = if (signedIn) AccountSubscriptions.channelId(channel.url) in accountIds else subs.any { it.url == channel.url }
+    val onClick: () -> Unit = {
+        if (signedIn) {
+            scope.launch {
+                toast(runCatching { AccountSubscriptions.toggle(channel.url, channel.name) }.getOrElse { it.friendlyMessage() })
+            }
+        } else {
+            Subscriptions.toggle(channel)
+        }
+    }
     if (subscribed) {
-        FilledTonalButton(onClick = { Subscriptions.toggle(channel) }) { Text("已订阅") }
+        FilledTonalButton(onClick = onClick) { Text("已订阅") }
     } else {
-        Button(onClick = { Subscriptions.toggle(channel) }, enabled = channel.url.isNotEmpty()) { Text("订阅") }
+        Button(onClick = onClick, enabled = channel.url.isNotEmpty()) { Text("订阅") }
     }
 }
 

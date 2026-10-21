@@ -36,6 +36,7 @@ class PawApp : Application(), SingletonImageLoader.Factory {
         Thread({ decoder.prewarm() }, "decoder-prewarm").apply { isDaemon = true }.start()
         Player.init(this)
         com.gpo.pipepaw.feature.account.SignIn.refresh()
+        com.gpo.pipepaw.core.account.AccountSubscriptions.start()
     }
 
     /** Thumbnails come from a handful of i.ytimg / ggpht hosts: lift OkHttp's 5-per-host cap. */

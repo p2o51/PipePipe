@@ -46,10 +46,23 @@ fun SettingsList(title: String, showBack: Boolean = false, bottom: Dp = 0.dp) {
     val autoPip by AppSettings.autoPip.state.collectAsState()
     val height by AppSettings.preferredHeight.state.collectAsState()
     val fame by FameMode.scopeKey.state.collectAsState()
+    val signedIn = com.gpo.pipepaw.core.account.Accounts.youtube.collectAsState().value is com.gpo.pipepaw.core.account.Profile.SignedIn
+    val nav = com.gpo.pipepaw.navigation.LocalNavigator.current
 
     SettingsScaffold(title = title, showBack = showBack) {
         SettingsGroup("账号") {
             item { com.gpo.pipepaw.feature.account.AccountRow() }
+            if (signedIn) {
+                com.gpo.pipepaw.feature.account.AccountList.entries.forEach { list ->
+                    item {
+                        SettingsItem(
+                            title = list.title,
+                            icon = if (list == com.gpo.pipepaw.feature.account.AccountList.WatchLater) PiliSymbols.WatchLater else PiliSymbols.ThumbUp,
+                            onClick = { nav.push(com.gpo.pipepaw.navigation.Route.AccountVideos(list.name)) },
+                        )
+                    }
+                }
+            }
         }
         SettingsGroup("外观") {
             item {

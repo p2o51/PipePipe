@@ -28,6 +28,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.gpo.pipepaw.core.account.Accounts
+import com.gpo.pipepaw.core.account.Profile
+import com.gpo.pipepaw.core.extractor.YtFeeds
+import com.gpo.pipepaw.core.settings.AppSettings
+import com.gpo.pipepaw.feature.settings.Choice
+import com.gpo.pipepaw.feature.settings.ConnectedToggleRow
+import com.gpo.pipepaw.ui.components.LoadMoreEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,16 +72,36 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 
 /**
- * 首页: the newest uploads of the local subscriptions, newest first, from each channel's RSS
- * feed (one light request per channel, six at a time). No account, no algorithm; 自建 Feed
- * (keyword and channel feeds, PiliPaw's) joins as tabs later.
+ * 首页. Signed out: the newest uploads of the local subscriptions, newest first, from each
+ * channel's RSS feed (one light request per channel, six at a time); no algorithm. Signed in:
+ * the account's own 订阅 feed (its subscriptions' uploads, the default) or YouTube's 推荐.
  */
+enum class HomeFeed(val label: String) { Subscriptions("订阅"), Recommended("推荐") }
+
 class HomeViewModel : ViewModel() {
-    val pager = Pager<VideoItem>(viewModelScope, dedupKey = { it.url }) { _ -> load() }
+    var feed by mutableStateOf(HomeFeed.Subscriptions)
+        private set
+
+    val pager = Pager<VideoItem>(viewModelScope, dedupKey = { it.url }) { cursor -> load(cursor) }
 
     init { pager.refresh() }
 
-    private suspend fun load(): Page<VideoItem> = coroutineScope {
+    fun select(f: HomeFeed) {
+        if (f == feed) return
+        feed = f
+        pager.refresh()
+    }
+
+    private suspend fun load(cursor: String?): Page<VideoItem> {
+        if (Accounts.youtube.value is Profile.SignedIn) {
+            val page = YtFeeds.videos(if (feed == HomeFeed.Recommended) YtFeeds.Feed.Home else YtFeeds.Feed.Subscriptions, cursor)
+            val hide = AppSettings.hideShorts.value
+            return page.copy(items = page.items.filterNot { hide && it.isShort })
+        }
+        return local()
+    }
+
+    private suspend fun local(): Page<VideoItem> = coroutineScope {
         val channels = Subscriptions.channels.value
         val gate = Semaphore(6)
         // The channel-page fallback carries no uploader avatar: the subscription has it.
@@ -102,14 +132,17 @@ fun HomeScreen() {
             if (gridState.firstVisibleItemIndex > 0) gridState.animateScrollToItem(0) else pager.refresh()
         }
     }
-    // A subscription added or removed elsewhere: the feed follows.
-    LaunchedEffect(subs.size) { if (!pager.initialLoading) pager.refresh() }
+    // A subscription added or removed elsewhere, or signing in / out: the feed follows.
+    val profile by Accounts.youtube.collectAsState()
+    val signedIn = profile is Profile.SignedIn
+    LaunchedEffect(subs.size, signedIn) { if (!pager.initialLoading) pager.refresh() }
+    LoadMoreEffect(gridState) { pager.loadMore() }
 
     val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val bottom = LocalBottomBarInset.current
     Box(Modifier.fillMaxSize()) {
         when {
-            subs.isEmpty() -> HomeMessage(onSearch = { nav.push(Route.Search()) }, statusTop = statusTop) {
+            !signedIn && subs.isEmpty() -> HomeMessage(onSearch = { nav.push(Route.Search()) }, statusTop = statusTop) {
                 EmptyState("还没有订阅", icon = YoinSymbols.Library)
                 Button(
                     onClick = { nav.push(Route.Search()) },
@@ -136,7 +169,10 @@ fun HomeScreen() {
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     item(span = { GridItemSpan(maxLineSpan) }, key = "header") {
-                        HomeHeader { nav.push(Route.Search()) }
+                        Column {
+                            HomeHeader { nav.push(Route.Search()) }
+                            if (signedIn) FeedToggle(vm.feed, vm::select)
+                        }
                     }
                     items(pager.items, key = { it.url }) { VideoCard(it) }
                 }
@@ -152,6 +188,17 @@ private fun HomeMessage(onSearch: () -> Unit, statusTop: Dp, content: @Composabl
         HomeHeader(onSearch)
         Box(Modifier.weight(1f).fillMaxWidth(), content = content)
     }
+}
+
+/** Signed in: 订阅 / 推荐, the account's two feeds. */
+@Composable
+private fun FeedToggle(selected: HomeFeed, onSelect: (HomeFeed) -> Unit) {
+    ConnectedToggleRow(
+        choices = HomeFeed.entries.map { Choice(it, it.label) },
+        selected = selected,
+        onSelect = onSelect,
+        modifier = Modifier.widthIn(max = 320.dp).padding(bottom = 12.dp),
+    )
 }
 
 /** The app's name and the search pill. */

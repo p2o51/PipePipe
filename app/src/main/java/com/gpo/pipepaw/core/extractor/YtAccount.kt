@@ -34,6 +34,24 @@ object YtAccount {
         )
     }
 
+    /** Subscribes the account to [channelIds] (UC… ids). A write: call only through AccountWrites. */
+    suspend fun subscribe(channelIds: List<String>) = withContext(Dispatchers.IO) {
+        if (channelIds.isEmpty()) return@withContext
+        val body = YoutubeParsingHelper.prepareDesktopJsonBuilder(Localization.DEFAULT, ContentCountry.DEFAULT)
+            .array("channelIds").apply { channelIds.forEach { value(it) } }.end()
+            .done()
+        post("subscription/subscribe", body)
+    }
+
+    /** Unsubscribes the account from [channelIds]. A write: call only through AccountWrites. */
+    suspend fun unsubscribe(channelIds: List<String>) = withContext(Dispatchers.IO) {
+        if (channelIds.isEmpty()) return@withContext
+        val body = YoutubeParsingHelper.prepareDesktopJsonBuilder(Localization.DEFAULT, ContentCountry.DEFAULT)
+            .array("channelIds").apply { channelIds.forEach { value(it) } }.end()
+            .done()
+        post("subscription/unsubscribe", body)
+    }
+
     /** A youtubei POST as the signed-in account. */
     internal fun post(endpoint: String, body: JsonObject): JsonObject {
         val headers = YoutubeParsingHelper.getYouTubeHeaders()

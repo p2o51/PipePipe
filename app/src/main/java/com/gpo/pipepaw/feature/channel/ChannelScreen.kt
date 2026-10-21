@@ -129,7 +129,8 @@ fun ChannelScreen(route: Route.Channel) {
 @Composable
 private fun Header(route: Route.Channel, info: ChannelInfo?) {
     val channel = ChannelItem(
-        url = route.url,
+        // The canonical /channel/UC… once loaded (a link may be an @handle): what subscriptions key on.
+        url = info?.url?.takeIf { it.contains("/channel/") } ?: route.url,
         name = info?.name ?: route.name,
         avatar = info?.avatarUrl ?: route.avatar,
         subscribers = info?.subscriberCount ?: -1,

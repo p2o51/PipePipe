@@ -140,6 +140,7 @@ private val appEntryProvider = entryProvider<NavKey> {
     entry<Route.Channel> { ChannelScreen(it) }
     entry<Route.Settings> { SettingsScreen() }
     entry<Route.SignIn> { com.gpo.pipepaw.feature.account.SignInScreen() }
+    entry<Route.AccountVideos> { com.gpo.pipepaw.feature.account.AccountVideosScreen(it) }
 }
 
 /** The finger travel of a whole back gesture on a wide window (a phone needs its own width). */
