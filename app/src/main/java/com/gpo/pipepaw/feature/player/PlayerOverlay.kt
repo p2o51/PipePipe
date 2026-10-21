@@ -134,6 +134,8 @@ fun PlayerOverlayHost() {
     val expanded = Player.expanded
     val feedback = remember { GestureFeedback() }
     val haptics = LocalHapticFeedback.current
+    val seek = rememberSeekState()
+    val frames = remember(session.info) { pickFrameset(session.info?.previewFrames.orEmpty(), PreviewMinWidthPx) }
 
     LaunchedEffect(expanded) {
         if (!expanded) Player.fullscreen = false
@@ -268,6 +270,7 @@ fun PlayerOverlayHost() {
                     ) {
                         FullContent(
                             session = session,
+                            seek = seek,
                             twoPane = twoPane,
                             topUnderVideo = fullVideoY + fullVideoH,
                             leftWidth = leftW,
@@ -311,6 +314,8 @@ fun PlayerOverlayHost() {
                         HoldSpeedPill(feedback, big = false, modifier = Modifier.align(Alignment.Center))
                     }
                 }
+                // Over the picture: the scrub preview rides above the seek bar's thumb.
+                if (p > 0.99f && !Player.fullscreen) SeekBubbleLayer(seek, frames, big = false)
             }
         }
         // Over everything, the overlay included: it takes the video surface while it is up.
@@ -375,6 +380,7 @@ private fun MiniContent(session: Player.Session, modifier: Modifier) {
 @Composable
 private fun FullContent(
     session: Player.Session,
+    seek: SeekState,
     twoPane: Boolean,
     topUnderVideo: Dp,
     leftWidth: Dp,
@@ -397,7 +403,7 @@ private fun FullContent(
                     .padding(horizontal = 24.dp)
                     .padding(bottom = navBottom + 24.dp),
             ) {
-                Controls(onCollapse)
+                Controls(seek, onCollapse)
                 Details(session, info)
             }
             val listState = rememberLazyListState()
@@ -411,7 +417,7 @@ private fun FullContent(
         }
     } else {
         Column(Modifier.fillMaxSize().padding(top = topUnderVideo)) {
-            Controls(onCollapse, Modifier.padding(horizontal = 16.dp))
+            Controls(seek, onCollapse, Modifier.padding(horizontal = 16.dp))
             LazyColumn(
                 Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = navBottom + 24.dp),
@@ -425,15 +431,9 @@ private fun FullContent(
 
 /** Under the picture, in the page's colours: collapse, the seek bar, the times, fullscreen and play. */
 @Composable
-private fun Controls(onCollapse: () -> Unit, modifier: Modifier = Modifier) {
-    val seek = rememberSeekState()
+private fun Controls(seek: SeekState, onCollapse: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth().padding(top = 8.dp)) {
-        Slider(
-            value = seek.fraction,
-            onValueChange = seek::onScrub,
-            onValueChangeFinished = seek::onScrubEnd,
-            enabled = seek.duration > 0,
-        )
+        PawSeekBar(seek, pageTrackInk(), modifier = Modifier.padding(horizontal = 4.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onCollapse, shapes = IconButtonDefaults.shapes()) {
                 Icon(YoinSymbols.ChevronDown, "收起")

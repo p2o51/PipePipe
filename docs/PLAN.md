@@ -27,7 +27,7 @@
 - [x] MediaSession + 前台服务：后台播放、通知、蓝牙按键（±10 秒），点通知回到展开的播放器；设置 › 播放 › 后台播放，关掉时离开即暂停、回来接着放。
 - [x] 全屏：画面缩成圆角卡片、控件在让出的带子里（`Fullscreen.kt`，`PlayerWindow.kt` 照搬 PiliPaw：沉浸、旋转、平板软件转向）；平板竖横屏验证。
 - [x] 手势：`DoubleTapSeek`（左右三分之一双击 ±10 秒，连点累加；中间双击暂停）、`HoldSpeed`（按住 2 倍，上下滑换档），展开的播放器和全屏都有；照搬 PiliPaw。
-- [ ] `SeekBar` / `SeekPreview`（YouTube 的 storyboard = `previewFrames`），进度条上方出预览。
+- [x] `SeekBar` / `SeekPreview`：细轨道按下变粗、长出胶囊滑块；拖动时拇指上方出 storyboard 帧和时间（`previewFrames`，按 160px 选一档，前后各预载一张），展开的播放器和全屏共用；真机核对过帧和落点一致。
 - [ ] 字幕（默认关）、画质和倍速面板。
 - [ ] 画中画；全屏的预测性返回（`FullscreenBack`）。
 - [ ] 性能：覆盖层的插值从组合期挪到 layout / draw 期。

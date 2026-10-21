@@ -82,13 +82,24 @@ internal class SeekState {
     var scrub by mutableFloatStateOf(0f)
         private set
 
+    /** Where the bar's track is, in window coordinates (the bubble rides above it). */
+    var track by mutableStateOf(androidx.compose.ui.geometry.Rect.Zero)
+        internal set
+    var buffered by mutableLongStateOf(0L)
+        internal set
+
     val duration: Long get() = Player.durationMs
+    val bufferedFraction: Float get() = if (duration > 0) (buffered.toFloat() / duration).coerceIn(0f, 1f) else 0f
     val fraction: Float get() = if (scrubbing) scrub else if (duration > 0) (position.toFloat() / duration).coerceIn(0f, 1f) else 0f
     val shownMs: Long get() = if (scrubbing) (scrub * duration).toLong() else position
 
     fun onScrub(value: Float) {
         scrubbing = true
         scrub = value
+    }
+
+    fun onScrubCancel() {
+        scrubbing = false
     }
 
     fun onScrubEnd() {
@@ -105,6 +116,7 @@ internal fun rememberSeekState(): SeekState {
     LaunchedEffect(state) {
         while (true) {
             if (!state.scrubbing) state.position = Player.exo.currentPosition
+            state.buffered = Player.exo.bufferedPosition
             delay(250)
         }
     }
@@ -214,6 +226,7 @@ internal fun FullscreenPlayer(session: Player.Session) {
             )
             DoubleTapSeekLayer(feedback.skip, big = true)
             HoldSpeedPill(feedback, big = true, modifier = Modifier.align(Alignment.Center))
+            val frames = remember(session.info) { pickFrameset(session.info?.previewFrames.orEmpty(), PreviewMinWidthPx) }
             if (revealing) {
                 CompositionLocalProvider(LocalContentColor provides OnVideo) {
                     TopBar(
@@ -233,6 +246,7 @@ internal fun FullscreenPlayer(session: Player.Session) {
                     )
                 }
             }
+            SeekBubbleLayer(seek, frames, big = true)
         }
     }
 }
@@ -292,21 +306,7 @@ private fun BottomBar(seek: SeekState, height: Dp, turned: Boolean, reveal: () -
             Icon(if (Player.isPlaying) YoinSymbols.PauseFilled else YoinSymbols.PlayFilled, if (Player.isPlaying) "暂停" else "播放")
         }
         TimeLabels(seek, OnVideoVariant, Modifier.padding(start = 6.dp, end = 12.dp))
-        Slider(
-            value = seek.fraction,
-            onValueChange = {
-                seek.onScrub(it)
-                onPoke()
-            },
-            onValueChangeFinished = seek::onScrubEnd,
-            enabled = seek.duration > 0,
-            colors = SliderDefaults.colors(
-                thumbColor = OnVideo,
-                activeTrackColor = OnVideo,
-                inactiveTrackColor = OnVideo.copy(alpha = 0.24f),
-            ),
-            modifier = Modifier.weight(1f),
-        )
+        PawSeekBar(seek, VideoTrackInk, onPoke, Modifier.weight(1f))
         Spacer(Modifier.width(10.dp))
         IconButton(onClick = { Player.fullscreen = false }, shapes = IconButtonDefaults.shapes(), modifier = Modifier.size(44.dp)) {
             Icon(PiliSymbols.FullscreenExit, contentDescription = "退出全屏")
@@ -315,6 +315,9 @@ private fun BottomBar(seek: SeekState, height: Dp, turned: Boolean, reveal: () -
 }
 
 private const val AutoHideMs = 3_000L
+
+/** Storyboard frames at least this wide (px) for the scrub preview. */
+internal const val PreviewMinWidthPx = 160
 
 /** The card never shrinks below this (a very short window keeps a usable picture). */
 private const val MinCardScale = 0.6f
