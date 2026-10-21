@@ -90,6 +90,7 @@ import com.gpo.pipepaw.ui.shell.floatingBarInset
 import com.gpo.pipepaw.ui.theme.ContinuousRoundedCornerShape
 import com.gpo.pipepaw.ui.theme.CoverTheme
 import com.gpo.pipepaw.ui.theme.YoinMotion
+import com.gpo.yoin.symbols.PiliSymbols
 import com.gpo.yoin.symbols.YoinSymbols
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -131,7 +132,10 @@ fun PlayerOverlayHost() {
     val spatial = YoinMotion.defaultSpatialSpec<Float>()
     val expanded = Player.expanded
 
-    LaunchedEffect(expanded) { progress.animateTo(if (expanded) 1f else 0f, spatial) }
+    LaunchedEffect(expanded) {
+        if (!expanded) Player.fullscreen = false
+        progress.animateTo(if (expanded) 1f else 0f, spatial)
+    }
 
     // Open at all (expanded, or left part-way by a drag): a collapsed bar never blocks the
     // page's own back.
@@ -300,6 +304,8 @@ fun PlayerOverlayHost() {
                 }
             }
         }
+        // Over everything, the overlay included: it takes the video surface while it is up.
+        if (Player.fullscreen) FullscreenPlayer(session)
     }
 }
 
@@ -307,7 +313,8 @@ private const val FlingVelocity = 1200f
 
 @Composable
 private fun BoxScope.Picture(session: Player.Session) {
-    if (session.info != null && session.error == null) {
+    // Fullscreen owns the one video surface while it is up.
+    if (session.info != null && session.error == null && !Player.fullscreen) {
         ContentFrame(
             player = Player.exo,
             modifier = Modifier.fillMaxSize(),
@@ -407,47 +414,27 @@ private fun FullContent(
     }
 }
 
-/** Under the picture, in the page's colours: collapse, play, the seek bar and the times. */
+/** Under the picture, in the page's colours: collapse, the seek bar, the times, fullscreen and play. */
 @Composable
 private fun Controls(onCollapse: () -> Unit, modifier: Modifier = Modifier) {
-    var position by remember { mutableLongStateOf(0L) }
-    var scrubbing by remember { mutableStateOf(false) }
-    var scrub by remember { mutableFloatStateOf(0f) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            if (!scrubbing) position = Player.exo.currentPosition
-            delay(250)
-        }
-    }
-    val duration = Player.durationMs
+    val seek = rememberSeekState()
     Column(modifier.fillMaxWidth().padding(top = 8.dp)) {
         Slider(
-            value = if (scrubbing) scrub else if (duration > 0) (position.toFloat() / duration).coerceIn(0f, 1f) else 0f,
-            onValueChange = {
-                scrubbing = true
-                scrub = it
-            },
-            onValueChangeFinished = {
-                if (duration > 0) Player.exo.seekTo((scrub * duration).toLong())
-                position = (scrub * duration).toLong()
-                scrubbing = false
-            },
-            enabled = duration > 0,
+            value = seek.fraction,
+            onValueChange = seek::onScrub,
+            onValueChangeFinished = seek::onScrubEnd,
+            enabled = seek.duration > 0,
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onCollapse, shapes = IconButtonDefaults.shapes()) {
                 Icon(YoinSymbols.ChevronDown, "收起")
             }
             Spacer(Modifier.weight(1f))
-            val shown = if (scrubbing) (scrub * duration).toLong() else position
-            Text(Fmt.duration(shown / 1000).ifEmpty { "0:00" }, style = MaterialTheme.typography.labelLarge)
-            Spacer(Modifier.width(8.dp))
-            Text(
-                Fmt.duration(duration / 1000),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            TimeLabels(seek, MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
+            IconButton(onClick = { Player.fullscreen = true }, shapes = IconButtonDefaults.shapes()) {
+                Icon(PiliSymbols.Fullscreen, "全屏")
+            }
             FilledTonalIconButton(onClick = Player::toggle, shapes = IconButtonDefaults.shapes()) {
                 Icon(if (Player.isPlaying) YoinSymbols.PauseFilled else YoinSymbols.PlayFilled, if (Player.isPlaying) "暂停" else "播放")
             }

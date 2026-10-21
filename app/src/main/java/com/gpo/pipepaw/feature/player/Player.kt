@@ -2,12 +2,14 @@ package com.gpo.pipepaw.feature.player
 
 import android.content.Context
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.PlaybackException
+import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import com.gpo.pipepaw.core.extractor.VideoItem
@@ -51,6 +53,13 @@ object Player {
     /** The overlay's target: full player (true) or mini bar (false). */
     var expanded by mutableStateOf(false)
 
+    /** The picture fills the window ([FullscreenPlayer]); only while expanded. */
+    var fullscreen by mutableStateOf(false)
+
+    /** The video's display aspect (width / height, pixel ratio applied); 16:9 until the first frame says otherwise. */
+    var videoAspect by mutableFloatStateOf(16f / 9f)
+        private set
+
     var isPlaying by mutableStateOf(false)
         private set
     var isBuffering by mutableStateOf(false)
@@ -71,6 +80,9 @@ object Player {
             .apply {
                 addListener(object : Media3Player.Listener {
                     override fun onIsPlayingChanged(playing: Boolean) { this@Player.isPlaying = playing }
+                    override fun onVideoSizeChanged(size: VideoSize) {
+                        if (size.width > 0 && size.height > 0) videoAspect = size.width * size.pixelWidthHeightRatio / size.height
+                    }
                     override fun onPlaybackStateChanged(state: Int) {
                         isBuffering = state == Media3Player.STATE_BUFFERING
                         if (state == Media3Player.STATE_READY) durationMs = duration.coerceAtLeast(0)
@@ -207,6 +219,7 @@ object Player {
         exo.stop()
         exo.clearMediaItems()
         expanded = false
+        fullscreen = false
         session = null
         syncBackgroundHost()
     }
