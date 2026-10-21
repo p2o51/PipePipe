@@ -66,6 +66,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -131,6 +132,8 @@ fun PlayerOverlayHost() {
     val progress = remember { Animatable(0f) }
     val spatial = YoinMotion.defaultSpatialSpec<Float>()
     val expanded = Player.expanded
+    val feedback = remember { GestureFeedback() }
+    val haptics = LocalHapticFeedback.current
 
     LaunchedEffect(expanded) {
         if (!expanded) Player.fullscreen = false
@@ -298,9 +301,15 @@ fun PlayerOverlayHost() {
                         .clip(ContinuousRoundedCornerShape(videoCorner))
                         .background(Color.Black)
                         .clickable(enabled = p < 0.5f) { Player.expanded = true }
-                        .draggable(drag, Orientation.Vertical, onDragStarted = { dragging = true }, onDragStopped = { settle(it) }),
+                        .draggable(drag, Orientation.Vertical, onDragStarted = { dragging = true }, onDragStopped = { settle(it) })
+                        // Open: double tap skips, a hold speeds up (a tap does nothing, nothing to show).
+                        .then(if (expanded) Modifier.pictureGestures(feedback, haptics) {} else Modifier),
                 ) {
                     Picture(session)
+                    if (expanded) {
+                        DoubleTapSeekLayer(feedback.skip, big = false)
+                        HoldSpeedPill(feedback, big = false, modifier = Modifier.align(Alignment.Center))
+                    }
                 }
             }
         }

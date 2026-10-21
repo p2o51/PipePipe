@@ -53,6 +53,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -172,6 +173,8 @@ internal fun FullscreenPlayer(session: Player.Session) {
     val reveal: () -> Float = remember(revealState) { { revealState.value } }
     val revealing by remember(revealState) { derivedStateOf { revealState.value > 0.004f } }
     val seek = rememberSeekState()
+    val feedback = remember { GestureFeedback() }
+    val haptics = LocalHapticFeedback.current
 
     Box(
         Modifier
@@ -204,13 +207,13 @@ internal fun FullscreenPlayer(session: Player.Session) {
             Box(
                 Modifier
                     .fillMaxSize()
-                    .pointerInput(Unit) {
-                        detectTapGestures {
-                            shown = !shown
-                            poked = System.nanoTime()
-                        }
+                    .pictureGestures(feedback, haptics) {
+                        shown = !shown
+                        poked = System.nanoTime()
                     },
             )
+            DoubleTapSeekLayer(feedback.skip, big = true)
+            HoldSpeedPill(feedback, big = true, modifier = Modifier.align(Alignment.Center))
             if (revealing) {
                 CompositionLocalProvider(LocalContentColor provides OnVideo) {
                     TopBar(

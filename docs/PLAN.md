@@ -26,7 +26,7 @@
 - [ ] SABR（`player/datasource/Sabr*` 和 `youtube/SabrRequestCoordinator`，播放部分约 1600 行，含 UMP 协议解析和自己的 DataSource / MediaSource）：登录后的 mweb 客户端只给 SABR 流，没有直链。依赖 PO token，放在登录之后。
 - [x] MediaSession + 前台服务：后台播放、通知、蓝牙按键（±10 秒），点通知回到展开的播放器；设置 › 播放 › 后台播放，关掉时离开即暂停、回来接着放。
 - [x] 全屏：画面缩成圆角卡片、控件在让出的带子里（`Fullscreen.kt`，`PlayerWindow.kt` 照搬 PiliPaw：沉浸、旋转、平板软件转向）；平板竖横屏验证。
-- [ ] 手势：`DoubleTapSeek`、`HoldSpeed`。
+- [x] 手势：`DoubleTapSeek`（左右三分之一双击 ±10 秒，连点累加；中间双击暂停）、`HoldSpeed`（按住 2 倍，上下滑换档），展开的播放器和全屏都有；照搬 PiliPaw。
 - [ ] `SeekBar` / `SeekPreview`（YouTube 的 storyboard = `previewFrames`），进度条上方出预览。
 - [ ] 字幕（默认关）、画质和倍速面板。
 - [ ] 画中画；全屏的预测性返回（`FullscreenBack`）。

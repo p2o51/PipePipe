@@ -67,6 +67,28 @@ object Player {
     var durationMs by mutableLongStateOf(0L)
         private set
 
+    /** The chosen speed (倍速); a hold boosts above it for as long as the finger stays. */
+    var speed by mutableFloatStateOf(1f)
+        private set
+    var boosting by mutableStateOf(false)
+        private set
+
+    fun changeSpeed(value: Float) {
+        speed = value
+        if (!boosting) exo.setPlaybackSpeed(value)
+    }
+
+    fun beginBoost(rate: Float) {
+        boosting = true
+        exo.setPlaybackSpeed(rate)
+    }
+
+    fun endBoost() {
+        if (!boosting) return
+        boosting = false
+        exo.setPlaybackSpeed(speed)
+    }
+
     val exo: ExoPlayer by lazy {
         ExoPlayer.Builder(app)
             .setAudioAttributes(
@@ -190,7 +212,8 @@ object Player {
                     StreamResolver.resolve(info, upstream, AppSettings.preferredHeight.value)
                 }
                 exo.setMediaSource(resolved.source)
-                exo.setPlaybackSpeed(AppSettings.defaultSpeed.value)
+                speed = AppSettings.defaultSpeed.value
+                exo.setPlaybackSpeed(speed)
                 exo.prepare()
                 exo.playWhenReady = AppSettings.autoPlay.value
             } catch (e: Throwable) {
