@@ -1,5 +1,7 @@
 package com.gpo.pipepaw.feature.settings
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
@@ -13,6 +15,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.gpo.pipepaw.BuildConfig
+import com.gpo.pipepaw.core.util.CrashLog
+import com.gpo.pipepaw.ui.components.rememberToast
 import com.gpo.pipepaw.core.settings.AppSettings
 import com.gpo.pipepaw.ui.components.FameMode
 import com.gpo.pipepaw.ui.components.FameScope
@@ -32,6 +36,7 @@ fun SettingsScreen() {
 @Composable
 fun SettingsList(title: String, showBack: Boolean = false, bottom: Dp = 0.dp) {
     val context = LocalContext.current
+    val toast = rememberToast()
     val themeMode by AppSettings.themeMode.state.collectAsState()
     val dynamic by AppSettings.dynamicColor.state.collectAsState()
     val cover by AppSettings.coverColor.state.collectAsState()
@@ -80,6 +85,21 @@ fun SettingsList(title: String, showBack: Boolean = false, bottom: Dp = 0.dp) {
         }
         SettingsGroup("关于") {
             item { SettingsItem(title = "PipePaw", icon = YoinSymbols.Info, summary = BuildConfig.VERSION_NAME) }
+            val crash = CrashLog.read()
+            if (crash != null) {
+                item {
+                    val clipboard = context.getSystemService(ClipboardManager::class.java)
+                    SettingsItem(
+                        title = "上次崩溃",
+                        icon = YoinSymbols.Info,
+                        summary = crash.lineSequence().drop(2).firstOrNull { it.isNotBlank() }?.take(80),
+                        onClick = {
+                            clipboard?.setPrimaryClip(ClipData.newPlainText("PipePaw crash", crash))
+                            toast("已复制崩溃日志")
+                        },
+                    )
+                }
+            }
             item {
                 SettingsLinkItem(
                     icon = PiliSymbols.Link,

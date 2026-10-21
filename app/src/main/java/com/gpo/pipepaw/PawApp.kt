@@ -22,6 +22,7 @@ class PawApp : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
+        com.gpo.pipepaw.core.util.CrashLog.install(this)
         AppSettings.init(this)
         Subscriptions.init(this)
         Yt.init(this, http)

@@ -13,9 +13,9 @@
 ## 阶段 1 · 在 Mac 上跑通
 
 - [x] 编译（AGP 9.2.1；Extractor 用 JDK 25 toolchain，app 本身 Java 17）。app 留在 17，Gradle 的变体匹配没有拒绝。根 settings 里的 foojay 管不到 includeBuild，所以机器上要有 JDK 25：在 `~/.gradle/gradle.properties` 里设 `org.gradle.java.installations.paths=<JDK 25 home>`。
-- [ ] 真机：搜索 → 播放 → 收起 → 进频道 → 订阅 → 首页，平板竖横屏各走一遍。
-- [ ] 确认未登录播放能拿到地址（签名和 n 参数现在走 PipePipe 的远程解码 API，`api.pipepipe.dev`）。
-- [ ] 把 Paw 套件对齐到 Mac 上 PiliPaw 0.4.30 的版本。
+- [x] 真机：搜索 → 播放 → 收起 → 进频道 → 订阅 → 首页，平板竖横屏各走一遍（录屏见 artifact）。
+- [x] 确认未登录播放能拿到地址（签名和 n 参数现在走 PipePipe 的远程解码 API，`api.pipepipe.dev`）。
+- [x] 把 Paw 套件对齐到 Mac 上 PiliPaw 0.4.31：主题、seam、SettingsKit 和大部分组件本来就一致；补了返回手势按窗口宽度计行程、底栏长按（长按首页开搜索）、CrashLog（我的 › 关于 › 上次崩溃）。没搬的都是 B 站功能：卡片预览、单列首页、底栏分区隐藏、返回时画面飞回卡片（PipePaw 的播放器是覆盖层，不经过页面返回）。
 - [ ] 发布：要不要沿用 PiliPaw 的规矩（Notion 更新日志 + Drive 上 debug 签名的 release 包）？
 
 ## 阶段 2 · 播放内核（从 PipePipeClient 移植成 Kotlin + Media3）

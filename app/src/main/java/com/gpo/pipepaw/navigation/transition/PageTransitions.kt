@@ -45,6 +45,7 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 /*
  * Page transitions for the single NavDisplay (predictive-back doctrine,
@@ -143,6 +144,13 @@ class PageTransitions internal constructor(
 
     private var pendingPops = 0
     private var generation = 0L
+
+    /**
+     * Finger travel that counts as a whole gesture (px), so a wide window needs a
+     * proportionate swipe: the system's progress saturates after a phone's width
+     * (~412dp), which on a tablet is a third of the screen. Set by the host.
+     */
+    internal var gestureSpanPx by mutableFloatStateOf(0f)
 
     // ── Snapshots ───────────────────────────────────────────────────────────
 
@@ -352,6 +360,7 @@ class PageTransitions internal constructor(
         val owner = ++generation
         var sawGesture = false
         var initialTouchY = Float.NaN
+        var initialTouchX = Float.NaN
         try {
             events.collect { event ->
                 if (!sawGesture) {
@@ -360,10 +369,20 @@ class PageTransitions internal constructor(
                     phase = BackPhase.Gesture
                 }
                 if (initialTouchY.isNaN()) initialTouchY = event.touchY
+                if (initialTouchX.isNaN()) initialTouchX = event.touchX
                 swipeEdge = event.swipeEdge
                 touchYDelta = event.touchY - initialTouchY
+                // The finger's own travel against the window's span (see gestureSpanPx); the
+                // system's progress where the touch position is unknown.
+                val span = gestureSpanPx
+                val travel = abs(event.touchX - initialTouchX)
+                val progress = if (span > 0f && !event.touchX.isNaN() && !initialTouchX.isNaN()) {
+                    (travel / span).coerceIn(0f, 1f)
+                } else {
+                    event.progress
+                }
                 // Direct 1:1 tracking: the eased progress IS the pose.
-                closing.snapTo(YoinMotion.backGestureEasing.transform(event.progress))
+                closing.snapTo(YoinMotion.backGestureEasing.transform(progress))
             }
             launchCommit()
         } catch (e: CancellationException) {

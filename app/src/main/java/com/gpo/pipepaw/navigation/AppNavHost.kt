@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntryDecorator
 import androidx.navigation3.runtime.NavKey
@@ -86,7 +87,11 @@ fun AppNavHost(navigator: Navigator) {
             Modifier
                 .fillMaxSize()
                 .background(backdrop)
-                .onSizeChanged { transitions.hostSize = it }
+                .onSizeChanged {
+                    transitions.hostSize = it
+                    // A whole back gesture: the window's width, up to a wide phone's worth more.
+                    transitions.gestureSpanPx = minOf(it.width.toFloat(), with(density) { GestureSpanMax.toPx() })
+                }
                 .voteHighFrameRate(transitions.phase != BackPhase.Idle),
         ) {
             BeneathPage(transitions, backdrop)
@@ -135,3 +140,6 @@ private val appEntryProvider = entryProvider<NavKey> {
     entry<Route.Channel> { ChannelScreen(it) }
     entry<Route.Settings> { SettingsScreen() }
 }
+
+/** The finger travel of a whole back gesture on a wide window (a phone needs its own width). */
+private val GestureSpanMax = 600.dp

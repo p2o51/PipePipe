@@ -28,6 +28,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.gpo.pipepaw.navigation.LocalNavigator
+import com.gpo.pipepaw.navigation.Route
 import com.gpo.pipepaw.feature.home.HomeScreen
 import com.gpo.pipepaw.feature.mine.MineScreen
 import com.gpo.pipepaw.feature.player.miniPlayerInset
@@ -70,6 +72,7 @@ object ShellRequests {
  */
 @Composable
 fun MainShell() {
+    val nav = LocalNavigator.current
     val tabs = listOf(
         NavTab("首页", YoinSymbols.Home, YoinSymbols.HomeFilled),
         NavTab("订阅", YoinSymbols.Library, YoinSymbols.LibraryFilled),
@@ -134,6 +137,9 @@ fun MainShell() {
                 selected = selected,
                 onSelect = { if (it == selected) reselects.tryEmit(it) else selected = it },
                 modifier = Modifier.align(Alignment.BottomCenter),
+                // Long press on 首页 opens search, as in PiliPaw.
+                onLongPress = { nav.push(Route.Search()) },
+                hasLongPress = { it == 0 },
             )
         }
     }
