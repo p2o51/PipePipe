@@ -62,10 +62,38 @@ object Yt {
 
     // ── Search ──────────────────────────────────────────────────────────────
 
-    suspend fun search(query: String, cursor: String?): Page<ListItem> = io {
-        // PipePipe's YouTube filters throw without a content filter; item 0 is "all", as its client defaults to.
+    /** What a search asks for (搜索筛选); the defaults are plain YouTube search. */
+    @kotlinx.serialization.Serializable
+    data class SearchFilter(
+        val type: Type = Type.All,
+        val sort: Sort = Sort.Relevance,
+        val date: Date = Date.Any,
+        val length: Length = Length.Any,
+    ) {
+        /** Content filter ids of PipePipe's YoutubeFilters, in its order. */
+        enum class Type(val label: String, val id: Int) { All("全部", 0), Videos("视频", 1), Channels("频道", 2), Playlists("播放列表", 3) }
+        /** Items of its "sortby" group, by position. */
+        enum class Sort(val label: String) { Relevance("相关"), Rating("评分"), Views("观看次数") }
+        /** Items of its "upload_date" group, by position. */
+        enum class Date(val label: String) { Any("不限"), Hour("一小时内"), Day("今天"), Week("本周"), Month("本月"), Year("今年") }
+        /** Items of its "duration" group, by position. */
+        enum class Length(val label: String) { Any("不限"), Short("4 分钟以内"), Long("20 分钟以上") }
+
+        val isDefault: Boolean get() = this == SearchFilter()
+    }
+
+    suspend fun search(query: String, cursor: String?, filter: SearchFilter = SearchFilter()): Page<ListItem> = io {
+        // PipePipe's YouTube filters throw without a content filter (item 0 is "all").
         val factory = service.searchQHFactory
-        val handler = factory.fromQuery(query, listOf(factory.getFilterItem(0)), null)
+        val content = factory.getFilterItem(filter.type.id)
+        val groups = factory.getContentFilterSortFilterVariant(filter.type.id)?.filterGroups.orEmpty()
+        fun pick(group: String, index: Int) = groups.firstOrNull { it.groupName == group }?.filterItems?.getOrNull(index)
+        val sort = listOfNotNull(
+            pick("sortby", filter.sort.ordinal),
+            pick("upload_date", filter.date.ordinal).takeIf { filter.date != SearchFilter.Date.Any },
+            pick("duration", filter.length.ordinal).takeIf { filter.length != SearchFilter.Length.Any },
+        )
+        val handler = factory.fromQuery(query, listOf(content), sort.takeIf { !filter.isDefault })
         if (cursor == null) {
             val info = SearchInfo.getInfo(service, handler)
             page(info.relatedItems.mapNotNull { it.toListItem() }.filterShorts(), info.nextPage)

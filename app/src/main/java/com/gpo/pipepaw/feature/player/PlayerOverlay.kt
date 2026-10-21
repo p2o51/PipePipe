@@ -83,6 +83,7 @@ import com.gpo.pipepaw.core.extractor.ChannelItem
 import com.gpo.pipepaw.core.extractor.toVideo
 import com.gpo.pipepaw.core.settings.AppSettings
 import com.gpo.pipepaw.core.util.Fmt
+import com.gpo.pipepaw.feature.mute.Mutes
 import com.gpo.pipepaw.feature.library.AddToPlaylistSheet
 import com.gpo.pipepaw.feature.library.Library
 import com.gpo.pipepaw.core.extractor.VideoItem
@@ -446,8 +447,9 @@ private fun FullContent(
     onCollapse: () -> Unit,
 ) {
     val info = session.info
-    val related = remember(info) {
-        info?.relatedItems.orEmpty().filterIsInstance<StreamInfoItem>().map { it.toVideo() }
+    val mutes by Mutes.version.collectAsState()
+    val related = remember(info, mutes) {
+        info?.relatedItems.orEmpty().filterIsInstance<StreamInfoItem>().map { it.toVideo() }.filterNot(Mutes::hides)
     }
     val comments = rememberCommentsState(session.url)
     val onSeek: (Long) -> Unit = { Player.exo.seekTo(it * 1000) }

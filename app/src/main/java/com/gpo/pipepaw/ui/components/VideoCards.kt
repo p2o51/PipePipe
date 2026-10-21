@@ -18,6 +18,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,11 +50,13 @@ val CardCoverShape = ContinuousRoundedCornerShape(12.dp)
 @Composable
 fun VideoCard(video: VideoItem, modifier: Modifier = Modifier, showChannel: Boolean = true) {
     val nav = LocalNavigator.current
+    var menu by remember { mutableStateOf(false) }
+    if (menu) VideoMenuSheet(video, onDismiss = { menu = false })
     Column(
         modifier
             .fillMaxWidth()
             .clip(CardCoverShape)
-            .clickable { Player.play(video.url, video) }
+            .combinedClickable(onLongClick = { menu = true }) { Player.play(video.url, video) }
             .padding(bottom = 12.dp),
     ) {
         Thumbnail(video, Modifier.fillMaxWidth())
@@ -83,12 +89,15 @@ fun VideoRow(
     thumbWidth: Dp = 168.dp,
     /** Watched so far (0..1) as a line along the thumbnail's bottom; null draws none. */
     progress: Float? = null,
+    /** Null: the video menu ([VideoMenuSheet]). */
     onLongClick: (() -> Unit)? = null,
 ) {
+    var menu by remember { mutableStateOf(false) }
+    if (menu) VideoMenuSheet(video, onDismiss = { menu = false })
     Row(
         modifier
             .fillMaxWidth()
-            .combinedClickable(onLongClick = onLongClick) { Player.play(video.url, video) }
+            .combinedClickable(onLongClick = onLongClick ?: { menu = true }) { Player.play(video.url, video) }
             .padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {

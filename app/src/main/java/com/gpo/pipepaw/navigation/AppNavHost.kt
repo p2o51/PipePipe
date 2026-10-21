@@ -144,6 +144,8 @@ private val appEntryProvider = entryProvider<NavKey> {
     entry<Route.LocalList> { com.gpo.pipepaw.feature.library.LocalListScreen(it) }
     entry<Route.Playlists> { com.gpo.pipepaw.feature.library.PlaylistsScreen() }
     entry<Route.LocalPlaylist> { com.gpo.pipepaw.feature.library.LocalPlaylistScreen(it) }
+    entry<Route.FeedEditor> { com.gpo.pipepaw.feature.feeds.FeedEditorScreen(it) }
+    entry<Route.Mutes> { com.gpo.pipepaw.feature.mute.MuteScreen() }
 }
 
 /** The finger travel of a whole back gesture on a wide window (a phone needs its own width). */

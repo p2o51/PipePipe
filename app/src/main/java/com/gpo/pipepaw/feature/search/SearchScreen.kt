@@ -1,5 +1,14 @@
 package com.gpo.pipepaw.feature.search
 
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ToggleButton
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.gpo.pipepaw.feature.mute.Mutes
+import com.gpo.pipepaw.ui.components.rememberSheetProperties
+import com.gpo.pipepaw.ui.components.sheetBottomPadding
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -122,9 +132,64 @@ fun SearchScreen(route: Route.Search) {
 }
 
 class SearchResultViewModel(private val query: String) : ViewModel() {
-    val pager = Pager<ListItem>(viewModelScope, dedupKey = { it.key }) { cursor -> Yt.search(query, cursor) }
+    var filter by mutableStateOf(Yt.SearchFilter())
+        private set
+
+    val pager = Pager<ListItem>(viewModelScope, dedupKey = { it.key }) { cursor ->
+        val page = Yt.search(query, cursor, filter)
+        page.copy(items = page.items.filterNot(Mutes::hides))
+    }
 
     init { pager.refresh() }
+
+    fun apply(f: Yt.SearchFilter) {
+        if (f == filter) return
+        filter = f
+        pager.refresh()
+    }
+}
+
+/**
+ * 筛选: 类型, 排序, 上传时间, 时长 as rows of toggle buttons (the time and length rows only for
+ * videos); applies as it changes.
+ */
+@Composable
+private fun SearchFilterSheet(filter: Yt.SearchFilter, onChange: (Yt.SearchFilter) -> Unit, onDismiss: () -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss, properties = rememberSheetProperties()) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = sheetBottomPadding()),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            FilterRow("类型", Yt.SearchFilter.Type.entries, filter.type, { it.label }) { onChange(filter.copy(type = it)) }
+            FilterRow("排序", Yt.SearchFilter.Sort.entries, filter.sort, { it.label }) { onChange(filter.copy(sort = it)) }
+            val videos = filter.type == Yt.SearchFilter.Type.All || filter.type == Yt.SearchFilter.Type.Videos
+            if (videos) {
+                FilterRow("上传时间", Yt.SearchFilter.Date.entries, filter.date, { it.label }) { onChange(filter.copy(date = it)) }
+                FilterRow("时长", Yt.SearchFilter.Length.entries, filter.length, { it.label }) { onChange(filter.copy(length = it)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun <T> FilterRow(title: String, options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit) {
+    val haptic = LocalHapticFeedback.current
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            options.forEach { o ->
+                ToggleButton(
+                    checked = o == selected,
+                    onCheckedChange = {
+                        if (o != selected) {
+                            haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            onSelect(o)
+                        }
+                    },
+                ) { Text(label(o)) }
+            }
+        }
+    }
 }
 
 /** Results: videos as rows, channels as channel rows, in YouTube's order. */
@@ -135,9 +200,20 @@ fun SearchResultScreen(route: Route.SearchResult) {
     val pager = vm.pager
     val state = rememberLazyListState()
     LoadMoreEffect(state) { pager.loadMore() }
+    var filters by remember { mutableStateOf(false) }
+    // A channel muted from a row's menu goes at once (the next pages are filtered as they load).
+    val mutes by Mutes.version.collectAsState()
+    val shown = remember(pager.items, mutes) { pager.items.filterNot(Mutes::hides) }
+    if (filters) SearchFilterSheet(vm.filter, vm::apply, onDismiss = { filters = false })
     Scaffold(
         topBar = {
             PawTopBar(route.query, actions = {
+                // 筛选: filled while any filter is set.
+                if (vm.filter.isDefault) {
+                    IconButton(onClick = { filters = true }) { Icon(YoinSymbols.Filter, "筛选") }
+                } else {
+                    FilledTonalIconButton(onClick = { filters = true }) { Icon(YoinSymbols.Filter, "筛选") }
+                }
                 IconButton(onClick = { nav.replace(Route.Search(route.query)) }) { Icon(YoinSymbols.Search, "搜索") }
             })
         },
@@ -151,7 +227,7 @@ fun SearchResultScreen(route: Route.SearchResult) {
                 modifier = Modifier.fillMaxSize().padding(top = inner.calculateTopPadding()).readingWidth().seamViewport(state),
                 contentPadding = PaddingValues(top = 8.dp, bottom = inner.calculateBottomPadding() + miniPlayerInset() + 16.dp),
             ) {
-                items(pager.items, key = { it.key }) { item ->
+                items(shown, key = { it.key }) { item ->
                     when (item) {
                         is ListItem.Video -> VideoRow(item.video)
                         is ListItem.Channel -> ChannelRow(item.channel)

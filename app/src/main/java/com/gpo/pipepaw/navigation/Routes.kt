@@ -30,4 +30,8 @@ sealed interface Route : NavKey {
     @Serializable data class LocalList(val kind: String) : Route
     @Serializable data object Playlists : Route
     @Serializable data class LocalPlaylist(val id: String) : Route
+
+    /** 新建 / 编辑 Feed ([id] null: a new one). */
+    @Serializable data class FeedEditor(val id: String? = null) : Route
+    @Serializable data object Mutes : Route
 }

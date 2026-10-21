@@ -94,6 +94,7 @@ fun SettingsList(title: String, showBack: Boolean = false, bottom: Dp = 0.dp) {
         }
         SettingsGroup("内容") {
             item { SettingsSwitchItem("隐藏 Shorts", hideShorts, { AppSettings.set(AppSettings.hideShorts, it) }, icon = PiliSymbols.Video) }
+            item { SettingsItem(title = "屏蔽", icon = YoinSymbols.VisibilityOff, onClick = { nav.push(com.gpo.pipepaw.navigation.Route.Mutes) }) }
             item {
                 SettingsToggleItem(
                     title = "名声模式",
