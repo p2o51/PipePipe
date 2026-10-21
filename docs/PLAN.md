@@ -34,6 +34,15 @@
 - 冷启动带链接偶尔打开上一个视频：查明是重装 App 后 Pixel 用任务原来的链接重启任务（`killDueToPackageUpdate` → SystemUI 再发一次旧的 VIEW），平时冷启动不会；不改代码。
 - [ ] 性能：覆盖层的插值从组合期挪到 layout / draw 期。
 
+## 阶段 2.5 · 登录（owner 2026-10-21 提前）
+
+- [x] 账号模型（`core/account`）：每个来源一个 `Profile`，未登录是完整可用的一档（本地订阅、visionos 播放），登录存 cookies、名字、handle、头像，存在应用私有的 SharedPreferences。`Source` 现在只有 YouTube；和 PiliPaw 合成一个 App 时加 Bilibili，账号面板按来源列。
+- [x] 入口：首页左上角的头像圈（未登录是人形，登录后是头像）→ 账号面板（底部面板）：未登录一行说明登录能多什么 + 「登录」，不弹窗不打断；「我的」顶上一行更安静的同款。登录页是 WebView 里 Google 自己的页面，凭据只在那个页面里输入。
+- [ ] cookies 接进 Extractor（`ServiceList.YouTube.setTokens`，SAPISIDHASH 由 Extractor 自己算）；取账号名字、头像；退出清 cookies 和 WebView 存储。
+- [ ] 登录后的播放：mweb + PO token + SABR；失败退回 visionos。
+- [ ] 登录后的内容：首页用账号的订阅流 / 推荐，订阅页是账号的频道（可导入本地订阅），「我的」里稍后再看和赞过的视频。
+- [ ] debug 包里写操作（订阅、点赞、加入播放列表）空跑：只记日志和弹提示。
+
 ## 阶段 3 · 内容
 
 - [ ] 评论（底部面板 / 平板右栏）、章节、SponsorBlock、ReturnYouTubeDislike。

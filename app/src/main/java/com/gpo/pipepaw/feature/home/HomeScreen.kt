@@ -37,6 +37,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gpo.pipepaw.core.extractor.VideoItem
+import com.gpo.pipepaw.feature.account.ProfileButton
 import com.gpo.pipepaw.core.extractor.Yt
 import com.gpo.pipepaw.feature.subscriptions.Subscriptions
 import com.gpo.pipepaw.navigation.LocalNavigator
@@ -161,6 +162,7 @@ private fun HomeHeader(onSearch: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        ProfileButton()
         Text("PipePaw", style = MaterialTheme.typography.titleLarge)
         Row(
             Modifier

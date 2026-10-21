@@ -26,6 +26,7 @@ class PawApp : Application(), SingletonImageLoader.Factory {
         super.onCreate()
         com.gpo.pipepaw.core.util.CrashLog.install(this)
         AppSettings.init(this)
+        com.gpo.pipepaw.core.account.Accounts.init(this)
         Subscriptions.init(this)
         Yt.init(this, http)
         // Signatures and n solved on the phone (V8 in a WebView); the extractor falls back to

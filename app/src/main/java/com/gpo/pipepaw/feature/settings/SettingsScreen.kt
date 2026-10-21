@@ -48,6 +48,9 @@ fun SettingsList(title: String, showBack: Boolean = false, bottom: Dp = 0.dp) {
     val fame by FameMode.scopeKey.state.collectAsState()
 
     SettingsScaffold(title = title, showBack = showBack) {
+        SettingsGroup("账号") {
+            item { com.gpo.pipepaw.feature.account.AccountRow() }
+        }
         SettingsGroup("外观") {
             item {
                 SettingsToggleItem(

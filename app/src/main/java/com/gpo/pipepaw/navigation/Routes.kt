@@ -19,4 +19,7 @@ sealed interface Route : NavKey {
     @Serializable data class Channel(val url: String, val name: String = "", val avatar: String = "") : Route
 
     @Serializable data object Settings : Route
+
+    /** Google's sign-in page in a WebView (feature/account). */
+    @Serializable data object SignIn : Route
 }
