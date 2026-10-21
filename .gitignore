@@ -1,3 +1,11 @@
 /.idea
 /web
 /nightly
+# PipePaw (Gradle / Android Studio)
+.gradle/
+build/
+/app/build/
+/yoin-symbols/build/
+local.properties
+*.iml
+.kotlin/
