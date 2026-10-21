@@ -65,6 +65,20 @@ fun SettingsList(title: String, showBack: Boolean = false, bottom: Dp = 0.dp) {
                 }
             }
         }
+        SettingsGroup("本机") {
+            item {
+                SettingsItem(title = "历史记录", icon = PiliSymbols.History, onClick = { nav.push(com.gpo.pipepaw.navigation.Route.LocalList("History")) })
+            }
+            // Signed in, 稍后再看 is the account's (above); signed out it is this device's.
+            if (!signedIn) {
+                item {
+                    SettingsItem(title = "稍后再看", icon = PiliSymbols.WatchLater, onClick = { nav.push(com.gpo.pipepaw.navigation.Route.LocalList("WatchLater")) })
+                }
+            }
+            item {
+                SettingsItem(title = "播放列表", icon = YoinSymbols.Playlist, onClick = { nav.push(com.gpo.pipepaw.navigation.Route.Playlists) })
+            }
+        }
         SettingsGroup("外观") {
             item {
                 SettingsToggleItem(

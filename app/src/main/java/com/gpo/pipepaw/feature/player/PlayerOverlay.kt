@@ -83,6 +83,11 @@ import com.gpo.pipepaw.core.extractor.ChannelItem
 import com.gpo.pipepaw.core.extractor.toVideo
 import com.gpo.pipepaw.core.settings.AppSettings
 import com.gpo.pipepaw.core.util.Fmt
+import com.gpo.pipepaw.feature.library.AddToPlaylistSheet
+import com.gpo.pipepaw.feature.library.Library
+import com.gpo.pipepaw.core.extractor.VideoItem
+import com.gpo.pipepaw.core.extractor.YtAccount
+import com.gpo.pipepaw.core.account.AccountWrites
 import com.gpo.pipepaw.ui.theme.withTabularFigures
 import com.gpo.pipepaw.ui.components.LocalSnackbarHost
 import androidx.compose.material3.SnackbarResult
@@ -599,10 +604,55 @@ private fun Details(session: Player.Session, info: StreamInfo?, modifier: Modifi
                 }
                 SubscribeButton(channel)
             }
+            VideoActions(info)
             if (Player.chapters.isNotEmpty()) ChapterRow(Player.chapters)
             Description(info)
         }
     }
+}
+
+/**
+ * 稍后再看 and 加入播放列表 as tonal buttons. Signed out both are this device's; signed in,
+ * 稍后再看 is the account's (a write: a dry run in debug builds).
+ */
+@Composable
+private fun VideoActions(info: StreamInfo) {
+    val profile by Accounts.youtube.collectAsState()
+    val later by Library.watchLater.collectAsState()
+    val toast = rememberToast()
+    val scope = rememberCoroutineScope()
+    val video = remember(info) {
+        VideoItem(
+            url = info.url, title = info.name.orEmpty(), thumbnail = info.thumbnailUrl.orEmpty(),
+            channelName = info.uploaderName.orEmpty(), channelUrl = info.uploaderUrl.orEmpty(),
+            channelAvatar = info.uploaderAvatarUrl.orEmpty(), durationSec = info.duration, views = info.viewCount,
+            uploaded = "", uploadedAt = 0, isLive = false, isShort = false, channelVerified = false,
+        )
+    }
+    var addSheet by remember { mutableStateOf(false) }
+    val signedIn = profile is Profile.SignedIn
+    val inLater = !signedIn && later.any { it.key == Library.keyOf(info.url) }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilledTonalButton(onClick = {
+            if (signedIn) {
+                scope.launch {
+                    toast(runCatching { AccountWrites.run("加入稍后再看") { YtAccount.watchLater(info.id, add = true) } }.getOrElse { it.friendlyMessage() })
+                }
+            } else {
+                toast(if (Library.toggleWatchLater(video)) "已加入稍后再看" else "已移出稍后再看")
+            }
+        }) {
+            Icon(if (inLater) YoinSymbols.Check else PiliSymbols.WatchLater, null, Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("稍后再看")
+        }
+        FilledTonalButton(onClick = { addSheet = true }) {
+            Icon(YoinSymbols.Add, null, Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("播放列表")
+        }
+    }
+    if (addSheet) AddToPlaylistSheet(video, onDismiss = { addSheet = false })
 }
 
 /**

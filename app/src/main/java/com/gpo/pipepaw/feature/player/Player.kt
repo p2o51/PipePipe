@@ -16,6 +16,7 @@ import androidx.media3.session.MediaSession
 import com.gpo.pipepaw.core.extractor.VideoItem
 import com.gpo.pipepaw.core.extractor.Yt
 import com.gpo.pipepaw.core.settings.AppSettings
+import com.gpo.pipepaw.feature.library.Library
 import com.gpo.pipepaw.ui.components.friendlyMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -205,7 +206,11 @@ object Player {
             .build()
             .apply {
                 addListener(object : Media3Player.Listener {
-                    override fun onIsPlayingChanged(playing: Boolean) { this@Player.isPlaying = playing }
+                    override fun onIsPlayingChanged(playing: Boolean) {
+                        this@Player.isPlaying = playing
+                        // Paused (or ended): the resume point is exact.
+                        if (!playing) savePosition()
+                    }
                     override fun onVideoSizeChanged(size: VideoSize) {
                         if (size.width > 0 && size.height > 0) videoAspect = size.width * size.pixelWidthHeightRatio / size.height
                     }
@@ -268,6 +273,13 @@ object Player {
     fun init(context: Context) {
         app = context.applicationContext
         scope.launch { AppSettings.backgroundPlay.state.collect { syncBackgroundHost() } }
+        // The history's resume point, kept fresh while playing.
+        scope.launch {
+            while (true) {
+                delay(5_000)
+                if (isPlaying) savePosition()
+            }
+        }
     }
 
     /**
@@ -300,6 +312,7 @@ object Player {
     fun play(url: String, preview: VideoItem? = null) {
         expanded = true
         if (session?.url == url && session?.error == null) return
+        savePosition()
         loadJob?.cancel()
         exo.stop()
         exo.clearMediaItems()
@@ -314,11 +327,13 @@ object Player {
                 if (session?.url != url) return@launch
                 session = Session(url, preview, info)
                 resetTracks(info)
+                Library.watched(videoOf(info, preview))
                 val resolved = withContext(Dispatchers.Default) {
                     StreamResolver.resolve(info, upstream, AppSettings.preferredHeight.value)
                 }
                 currentHeight = resolved.video?.height ?: 0
-                exo.setMediaSource(resolved.source)
+                // Pick up where it was left (history), unless it was watched to the end.
+                exo.setMediaSource(resolved.source, Library.resumeAt(url))
                 // The speed picked for the last video carries on (the setting's default before that).
                 if (!speedChosen) speed = AppSettings.defaultSpeed.value
                 exo.setPlaybackSpeed(speed)
@@ -329,6 +344,30 @@ object Player {
                 if (session?.url == url) session = Session(url, preview, session?.info, error = e.friendlyMessage())
             }
         }
+    }
+
+    /** The history's row for a video: what the info says, the card's thumbnail as a fallback. */
+    private fun videoOf(info: StreamInfo, preview: VideoItem?): VideoItem = VideoItem(
+        url = info.url,
+        title = info.name.orEmpty(),
+        thumbnail = info.thumbnailUrl ?: preview?.thumbnail.orEmpty(),
+        channelName = info.uploaderName.orEmpty(),
+        channelUrl = info.uploaderUrl.orEmpty(),
+        channelAvatar = info.uploaderAvatarUrl.orEmpty(),
+        durationSec = info.duration,
+        views = info.viewCount,
+        uploaded = "",
+        uploadedAt = 0,
+        isLive = false,
+        isShort = false,
+        channelVerified = false,
+    )
+
+    /** Writes where the current video is to the history (every few seconds, and on leaving it). */
+    private fun savePosition() {
+        val s = session ?: return
+        if (s.info == null || exo.duration <= 0) return
+        Library.savePosition(s.url, exo.currentPosition)
     }
 
     fun retry() {
@@ -346,6 +385,7 @@ object Player {
 
     /** Mini bar's close: playback stops and the overlay goes away. */
     fun close() {
+        savePosition()
         loadJob?.cancel()
         exo.stop()
         exo.clearMediaItems()

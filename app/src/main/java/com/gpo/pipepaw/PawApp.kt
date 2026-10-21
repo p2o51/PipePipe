@@ -28,6 +28,7 @@ class PawApp : Application(), SingletonImageLoader.Factory {
         AppSettings.init(this)
         com.gpo.pipepaw.core.account.Accounts.init(this)
         Subscriptions.init(this)
+        com.gpo.pipepaw.feature.library.Library.init(this)
         Yt.init(this, http)
         // Signatures and n solved on the phone (V8 in a WebView); the extractor falls back to
         // PipePipe's remote decoder if this ever fails. Warmed off the main thread at start.

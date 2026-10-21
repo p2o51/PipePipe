@@ -2,6 +2,8 @@ package com.gpo.pipepaw.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -75,15 +77,22 @@ fun VideoCard(video: VideoItem, modifier: Modifier = Modifier, showChannel: Bool
 
 /** A compact row: thumbnail left, text right. Search results, related videos. */
 @Composable
-fun VideoRow(video: VideoItem, modifier: Modifier = Modifier, thumbWidth: Dp = 168.dp) {
+fun VideoRow(
+    video: VideoItem,
+    modifier: Modifier = Modifier,
+    thumbWidth: Dp = 168.dp,
+    /** Watched so far (0..1) as a line along the thumbnail's bottom; null draws none. */
+    progress: Float? = null,
+    onLongClick: (() -> Unit)? = null,
+) {
     Row(
         modifier
             .fillMaxWidth()
-            .clickable { Player.play(video.url, video) }
+            .combinedClickable(onLongClick = onLongClick) { Player.play(video.url, video) }
             .padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Thumbnail(video, Modifier.width(thumbWidth))
+        Thumbnail(video, Modifier.width(thumbWidth), progress)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(video.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
@@ -119,9 +128,22 @@ fun ChannelRow(channel: ChannelItem, modifier: Modifier = Modifier) {
 
 /** 16:9 thumbnail; duration (or 直播) in a small block on its corner. */
 @Composable
-fun Thumbnail(video: VideoItem, modifier: Modifier = Modifier) {
+fun Thumbnail(video: VideoItem, modifier: Modifier = Modifier, progress: Float? = null) {
     Box(modifier.aspectRatio(16f / 9f)) {
         NetImage(video.thumbnail, Modifier.matchParentSize(), shape = CardCoverShape, thumbWidth = null)
+        if (progress != null && progress > 0.01f) {
+            val played = MaterialTheme.colorScheme.primary
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .clip(CardCoverShape)
+                    .drawWithContent {
+                        val h = 3.dp.toPx()
+                        drawRect(Color.White.copy(alpha = 0.3f), topLeft = androidx.compose.ui.geometry.Offset(0f, size.height - h), size = androidx.compose.ui.geometry.Size(size.width, h))
+                        drawRect(played, topLeft = androidx.compose.ui.geometry.Offset(0f, size.height - h), size = androidx.compose.ui.geometry.Size(size.width * progress.coerceIn(0f, 1f), h))
+                    },
+            )
+        }
         val badge = if (video.isLive) "直播" else Fmt.duration(video.durationSec)
         if (badge.isNotEmpty()) {
             Text(

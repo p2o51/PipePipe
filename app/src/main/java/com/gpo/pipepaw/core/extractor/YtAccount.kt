@@ -52,6 +52,24 @@ object YtAccount {
         post("subscription/unsubscribe", body)
     }
 
+    /** Adds [videoId] to the account's 稍后再看 or takes it out. A write: only through AccountWrites. */
+    suspend fun watchLater(videoId: String, add: Boolean) = withContext(Dispatchers.IO) {
+        val action = JsonObject().apply {
+            if (add) {
+                put("action", "ACTION_ADD_VIDEO")
+                put("addedVideoId", videoId)
+            } else {
+                put("action", "ACTION_REMOVE_VIDEO_BY_VIDEO_ID")
+                put("removedVideoId", videoId)
+            }
+        }
+        val body = YoutubeParsingHelper.prepareDesktopJsonBuilder(Localization.DEFAULT, ContentCountry.DEFAULT)
+            .value("playlistId", "WL")
+            .array("actions").value(action).end()
+            .done()
+        post("browse/edit_playlist", body)
+    }
+
     /** A youtubei POST as the signed-in account. */
     internal fun post(endpoint: String, body: JsonObject): JsonObject {
         val headers = YoutubeParsingHelper.getYouTubeHeaders()

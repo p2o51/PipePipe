@@ -25,4 +25,9 @@ sealed interface Route : NavKey {
 
     /** A signed-in account list ([com.gpo.pipepaw.feature.account.AccountList] name). */
     @Serializable data class AccountVideos(val list: String) : Route
+
+    /** 本机 history / watch later ([com.gpo.pipepaw.feature.library.LocalList] name). */
+    @Serializable data class LocalList(val kind: String) : Route
+    @Serializable data object Playlists : Route
+    @Serializable data class LocalPlaylist(val id: String) : Route
 }
