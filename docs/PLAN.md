@@ -20,7 +20,7 @@
 
 ## 阶段 2 · 播放内核（从 PipePipeClient 移植成 Kotlin + Media3）
 
-- [ ] `YoutubeHttpDataSource`：403 时刷新地址、按客户端换 UA、POST。
+- [x] `YoutubeHttpDataSource` 的 Kotlin 版（`YoutubeDataSource`，OkHttp + ResolvingDataSource）：`&range=` / `&rn=`、按客户端换 UA（Android / iOS）、移动端用 POST、WEB / TV 内嵌带 Origin / Referer。403 等 HTTP 和网络错误时重新解析、从原位置接着放（每个视频两次），和 PipePipe 的 PlayerErrorHandler 一样；用强制失败的请求在真机上验证过。
 - [ ] 本地 WebView JS 解码（`WebViewJavaScriptDecoder`），不再依赖远程解码 API。
 - [ ] PO token（`LocalDomPoTokenProvider`、`SharedWebViewRuntime`）。
 - [ ] SABR（`player/datasource/Sabr*`，约 2000 行）：登录后的 mweb 客户端需要。

@@ -1,12 +1,9 @@
 package com.gpo.pipepaw.feature.player
 
 import android.net.Uri
-import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.datasource.DataSource
-import androidx.media3.datasource.DataSpec
-import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.exoplayer.dash.DashMediaSource
 import androidx.media3.exoplayer.dash.manifest.DashManifestParser
 import androidx.media3.exoplayer.hls.HlsMediaSource
@@ -23,7 +20,6 @@ import org.schabi.newpipe.extractor.stream.StreamInfo
 import org.schabi.newpipe.extractor.stream.StreamType
 import org.schabi.newpipe.extractor.stream.VideoStream
 import java.io.ByteArrayInputStream
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * StreamInfo → one Media3 [MediaSource], the way PipePipeClient's PlaybackResolver does it for
@@ -39,7 +35,7 @@ object StreamResolver {
     data class Resolved(val source: MediaSource, val video: VideoStream?, val audio: AudioStream?)
 
     fun resolve(info: StreamInfo, upstream: DataSource.Factory, preferredHeight: Int): Resolved {
-        val factory = youtubeRanges(upstream)
+        val factory = YoutubeDataSource.forVideo(upstream)
         val item = MediaItem.Builder()
             .setUri(info.url)
             .setMediaId(info.url)
@@ -124,27 +120,5 @@ object StreamResolver {
             return DashMediaSource.Factory(factory).createMediaSource(parsed, item.buildUpon().setUri(stream.content).build())
         }
         return ProgressiveMediaSource.Factory(factory).createMediaSource(item.buildUpon().setUri(stream.content).build())
-    }
-
-    /**
-     * googlevideo `/videoplayback` wants its byte range as a query parameter (`&range=a-b`) and a
-     * request counter (`&rn=`), as PipePipe's YoutubeHttpDataSource sends them; a Range header on
-     * these URLs is throttled or refused. The rewritten request starts at 0 of the slice.
-     */
-    private fun youtubeRanges(upstream: DataSource.Factory): DataSource.Factory {
-        val counter = AtomicLong()
-        return ResolvingDataSource.Factory(upstream) { spec: DataSpec ->
-            val uri = spec.uri
-            if (uri.path?.startsWith("/videoplayback") != true || uri.getQueryParameter("range") != null) {
-                spec
-            } else {
-                val end = if (spec.length != C.LENGTH_UNSET.toLong()) (spec.position + spec.length - 1).toString() else ""
-                val rewritten = uri.buildUpon()
-                    .appendQueryParameter("range", "${spec.position}-$end")
-                    .appendQueryParameter("rn", counter.getAndIncrement().toString())
-                    .build()
-                spec.buildUpon().setUri(rewritten).setPosition(0).setUriPositionOffset(0).setLength(C.LENGTH_UNSET.toLong()).build()
-            }
-        }
     }
 }

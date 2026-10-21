@@ -8,10 +8,8 @@ import androidx.compose.runtime.setValue
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.PlaybackException
-import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
-import com.gpo.pipepaw.core.extractor.PawDownloader
 import com.gpo.pipepaw.core.extractor.VideoItem
 import com.gpo.pipepaw.core.extractor.Yt
 import com.gpo.pipepaw.core.settings.AppSettings
@@ -79,14 +77,54 @@ object Player {
                     }
                     override fun onPlayerError(error: PlaybackException) {
                         val s = session ?: return
+                        if (error.errorCode in RecoverableErrors && recover(s)) return
                         session = Session(s.url, s.preview, s.info, error = "播放出错 ${error.errorCodeName}")
                     }
                 })
             }
     }
 
-    private val upstream by lazy {
-        OkHttpDataSource.Factory(Yt.downloader.client).setUserAgent(PawDownloader.USER_AGENT)
+    private val upstream by lazy { YoutubeDataSource.upstream(Yt.downloader.client) }
+
+    /**
+     * HTTP and network failures (a 403 on an expired or refused URL above all) re-extract the
+     * stream and pick up where it was, as PipePipe's PlayerErrorHandler does; twice per video,
+     * then the error shows with 重试.
+     */
+    private val RecoverableErrors = setOf(
+        PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS,
+        PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE,
+        PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
+        PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
+        PlaybackException.ERROR_CODE_IO_UNSPECIFIED,
+        PlaybackException.ERROR_CODE_TIMEOUT,
+    )
+    private const val MaxRecoveries = 2
+    private var recoveries = 0
+
+    private fun recover(s: Session): Boolean {
+        if (recoveries >= MaxRecoveries) return false
+        recoveries++
+        val position = exo.currentPosition
+        val resume = exo.playWhenReady
+        loadJob?.cancel()
+        loadJob = scope.launch {
+            try {
+                val info = Yt.stream(s.url)
+                if (session?.url != s.url) return@launch
+                session = Session(s.url, s.preview, info)
+                val resolved = withContext(Dispatchers.Default) {
+                    StreamResolver.resolve(info, upstream, AppSettings.preferredHeight.value)
+                }
+                exo.setMediaSource(resolved.source, position)
+                exo.prepare()
+                exo.playWhenReady = resume
+            } catch (e: Throwable) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                if (session?.url == s.url) session = Session(s.url, s.preview, session?.info, error = e.friendlyMessage())
+            }
+        }
+        return true
     }
 
     fun init(context: Context) {
@@ -128,6 +166,7 @@ object Player {
         exo.stop()
         exo.clearMediaItems()
         durationMs = 0
+        recoveries = 0
         session = Session(url, preview)
         syncBackgroundHost()
         loadJob = scope.launch {
