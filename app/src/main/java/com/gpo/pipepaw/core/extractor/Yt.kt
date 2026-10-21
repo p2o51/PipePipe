@@ -82,9 +82,15 @@ object Yt {
         page(more.items.map { it.toVideo() }.filterShortVideos(), more.nextPage)
     }
 
-    /** A channel's latest uploads from its RSS feed: one cheap request, no paging. */
+    /**
+     * A channel's latest uploads: its RSS feed first (one cheap request, no paging), the channel
+     * page's first uploads when the feed fails or comes back empty, as PipePipe's FeedLoadManager
+     * falls back. YouTube's RSS endpoint answers 404 / 500 for whole days at a time.
+     */
     suspend fun latest(channelUrl: String): List<VideoItem> = io {
-        FeedInfo.getInfo(service, channelUrl).relatedItems.map { it.toVideo() }
+        val feed = runCatching { FeedInfo.getInfo(service, channelUrl).relatedItems }.getOrNull()
+        if (!feed.isNullOrEmpty()) feed.map { it.toVideo() }
+        else ChannelInfo.getInfo(service, channelUrl).relatedItems.map { it.toVideo() }
     }
 
     // ── Comments ────────────────────────────────────────────────────────────
