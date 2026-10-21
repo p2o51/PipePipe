@@ -1,6 +1,10 @@
 package com.gpo.pipepaw.feature.player
 
-import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
@@ -166,7 +170,19 @@ internal fun FullscreenPlayer(session: Player.Session) {
     val turnSpec = YoinMotion.defaultSpatialSpec<Float>()
     LaunchedEffect(turned, turn) { turnAngle.animateTo(if (turned) turn else 0f, turnSpec) }
 
-    BackHandler { Player.fullscreen = false }
+    // Predictive back: the whole fullscreen frame shrinks toward the centre and rounds with the
+    // finger (the controls fade), a preview of leaving; letting go leaves, cancelling springs back.
+    val back = remember { Animatable(0f) }
+    val backScope = rememberCoroutineScope()
+    PredictiveBackHandler { events ->
+        try {
+            events.collect { e -> back.snapTo(YoinMotion.backGestureEasing.transform(e.progress)) }
+            Player.fullscreen = false
+        } catch (e: CancellationException) {
+            backScope.launch { back.animateTo(0f, turnSpec) }
+            throw e
+        }
+    }
 
     var shown by remember { mutableStateOf(true) }
     var poked by remember { mutableLongStateOf(0L) }
@@ -191,6 +207,16 @@ internal fun FullscreenPlayer(session: Player.Session) {
     Box(
         Modifier
             .fillMaxSize()
+            .graphicsLayer {
+                val b = back.value
+                if (b > 0f) {
+                    val k = 1f - BackShrink * b
+                    scaleX = k
+                    scaleY = k
+                    shape = RoundedCornerShape(BackCorner * b)
+                    clip = true
+                }
+            }
             .background(Color.Black)
             .turnedContent(turned) { turnAngle.value },
     ) {
@@ -235,6 +261,7 @@ internal fun FullscreenPlayer(session: Player.Session) {
                         height = topBand,
                         turned = turned,
                         reveal = reveal,
+                        backFade = { (back.value * 3f).coerceAtMost(1f) },
                         modifier = Modifier.align(Alignment.TopCenter),
                     )
                     BottomBar(
@@ -242,6 +269,7 @@ internal fun FullscreenPlayer(session: Player.Session) {
                         height = bottomBand,
                         turned = turned,
                         reveal = reveal,
+                        backFade = { (back.value * 3f).coerceAtMost(1f) },
                         onPoke = { poked = System.nanoTime() },
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )
@@ -253,13 +281,13 @@ internal fun FullscreenPlayer(session: Player.Session) {
 }
 
 @Composable
-private fun TopBar(title: String, height: Dp, turned: Boolean, reveal: () -> Float, modifier: Modifier) {
+private fun TopBar(title: String, height: Dp, turned: Boolean, reveal: () -> Float, backFade: () -> Float, modifier: Modifier) {
     Row(
         modifier
             .fillMaxWidth()
             .graphicsLayer {
                 val p = reveal().coerceIn(0f, 1f)
-                alpha = p
+                alpha = p * (1f - backFade())
                 translationY = (1f - p) * -14.dp.toPx()
             }
             .then(if (turned) Modifier else Modifier.windowInsetsPadding(WindowInsets.displayCutout))
@@ -288,13 +316,13 @@ private fun TopBar(title: String, height: Dp, turned: Boolean, reveal: () -> Flo
 }
 
 @Composable
-private fun BottomBar(seek: SeekState, height: Dp, turned: Boolean, reveal: () -> Float, onPoke: () -> Unit, modifier: Modifier) {
+private fun BottomBar(seek: SeekState, height: Dp, turned: Boolean, reveal: () -> Float, backFade: () -> Float, onPoke: () -> Unit, modifier: Modifier) {
     Row(
         modifier
             .fillMaxWidth()
             .graphicsLayer {
                 val p = reveal().coerceIn(0f, 1f)
-                alpha = p
+                alpha = p * (1f - backFade())
                 translationY = (1f - p) * 14.dp.toPx()
             }
             .then(if (turned) Modifier else Modifier.windowInsetsPadding(WindowInsets.displayCutout))
@@ -337,6 +365,10 @@ private fun BottomBar(seek: SeekState, height: Dp, turned: Boolean, reveal: () -
 }
 
 private const val AutoHideMs = 3_000L
+
+/** How far the back gesture shrinks the fullscreen frame, and its corners at full travel. */
+private const val BackShrink = 0.12f
+private val BackCorner = 28.dp
 
 /** Storyboard frames at least this wide (px) for the scrub preview. */
 internal const val PreviewMinWidthPx = 160
