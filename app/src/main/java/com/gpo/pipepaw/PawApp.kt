@@ -35,6 +35,7 @@ class PawApp : Application(), SingletonImageLoader.Factory {
         YoutubeApiDecoder.setLocalDecoder(decoder)
         Thread({ decoder.prewarm() }, "decoder-prewarm").apply { isDaemon = true }.start()
         Player.init(this)
+        com.gpo.pipepaw.feature.player.Segments.configure()
         com.gpo.pipepaw.feature.account.SignIn.refresh()
         com.gpo.pipepaw.core.account.AccountSubscriptions.start()
     }

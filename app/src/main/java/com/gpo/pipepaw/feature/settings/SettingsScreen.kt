@@ -46,6 +46,7 @@ fun SettingsList(title: String, showBack: Boolean = false, bottom: Dp = 0.dp) {
     val autoPip by AppSettings.autoPip.state.collectAsState()
     val height by AppSettings.preferredHeight.state.collectAsState()
     val fame by FameMode.scopeKey.state.collectAsState()
+    val sbEnabled by com.gpo.pipepaw.feature.player.Segments.enabled.state.collectAsState()
     val signedIn = com.gpo.pipepaw.core.account.Accounts.youtube.collectAsState().value is com.gpo.pipepaw.core.account.Profile.SignedIn
     val nav = com.gpo.pipepaw.navigation.LocalNavigator.current
 
@@ -101,6 +102,20 @@ fun SettingsList(title: String, showBack: Boolean = false, bottom: Dp = 0.dp) {
                     selected = height,
                     onSelect = { AppSettings.set(AppSettings.preferredHeight, it) },
                 )
+            }
+        }
+        SettingsGroup("SponsorBlock") {
+            item {
+                SettingsSwitchItem("标出片段", sbEnabled, {
+                    AppSettings.set(com.gpo.pipepaw.feature.player.Segments.enabled, it)
+                    com.gpo.pipepaw.feature.player.Segments.configure()
+                }, icon = PiliSymbols.Video)
+            }
+            com.gpo.pipepaw.feature.player.SbCategory.entries.forEach { c ->
+                item {
+                    val on by c.skip.state.collectAsState()
+                    SettingsSwitchItem("跳过${c.label}", on, { AppSettings.set(c.skip, it) }, enabled = sbEnabled)
+                }
             }
         }
         SettingsGroup("关于") {

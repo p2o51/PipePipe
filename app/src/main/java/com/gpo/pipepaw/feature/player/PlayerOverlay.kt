@@ -83,6 +83,12 @@ import com.gpo.pipepaw.core.extractor.ChannelItem
 import com.gpo.pipepaw.core.extractor.toVideo
 import com.gpo.pipepaw.core.settings.AppSettings
 import com.gpo.pipepaw.core.util.Fmt
+import com.gpo.pipepaw.ui.theme.withTabularFigures
+import com.gpo.pipepaw.ui.components.LocalSnackbarHost
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.lazy.LazyRow
 import com.gpo.pipepaw.ui.components.FameCount
 import com.gpo.pipepaw.ui.components.sheetBottomPadding
 import com.gpo.pipepaw.ui.components.rememberSheetProperties
@@ -212,6 +218,16 @@ fun PlayerOverlayHost() {
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    // SponsorBlock skipped a segment: one quiet line with 撤销 (the bar closes the segment up).
+    val snackbar = LocalSnackbarHost.current
+    val lastSkip = Player.lastSkip
+    LaunchedEffect(lastSkip) {
+        val s = lastSkip ?: return@LaunchedEffect
+        snackbar.currentSnackbarData?.dismiss()
+        val r = snackbar.showSnackbar("已跳过${s.category.label}", actionLabel = "撤销", duration = SnackbarDuration.Short)
+        if (r == SnackbarResult.ActionPerformed) Player.undoSkip()
     }
 
     val view = LocalView.current
@@ -549,6 +565,8 @@ private fun Details(session: Player.Session, info: StreamInfo?, modifier: Modifi
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (info.viewCount >= 0) ValueLabel(Fmt.count(info.viewCount), "次观看")
                 if (info.likeCount >= 0) ValueLabel(Fmt.count(info.likeCount), "赞")
+                // Return YouTube Dislike's estimate (YouTube hides the real count).
+                if (info.dislikeCount >= 0) ValueLabel(Fmt.count(info.dislikeCount), "踩")
                 Fmt.ago(info.uploadDate?.offsetDateTime()?.toInstant()?.toEpochMilli() ?: 0L).takeIf { it.isNotEmpty() }?.let {
                     Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -581,7 +599,62 @@ private fun Details(session: Player.Session, info: StreamInfo?, modifier: Modifi
                 }
                 SubscribeButton(channel)
             }
+            if (Player.chapters.isNotEmpty()) ChapterRow(Player.chapters)
             Description(info)
+        }
+    }
+}
+
+/**
+ * 章节: the chapters as a row of small cards (still, time, title), the one playing in the
+ * primary container; a tap seeks there.
+ */
+@Composable
+private fun ChapterRow(chapters: List<Chapter>) {
+    var position by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(chapters) {
+        while (true) {
+            position = Player.exo.currentPosition
+            delay(500)
+        }
+    }
+    val current = chapters.at(position)
+    val listState = rememberLazyListState()
+    LaunchedEffect(current) {
+        val i = chapters.indexOf(current)
+        if (i >= 0) listState.animateScrollToItem(i)
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("章节", style = MaterialTheme.typography.titleSmall)
+        LazyRow(state = listState, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(chapters, key = { it.startMs }) { c ->
+                val on = c === current
+                Column(
+                    Modifier
+                        .width(148.dp)
+                        .clip(ContinuousRoundedCornerShape(12.dp))
+                        .background(if (on) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer)
+                        .clickable { Player.exo.seekTo(c.startMs) }
+                        .padding(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    if (c.preview.isNotEmpty()) {
+                        NetImage(c.preview, Modifier.fillMaxWidth().aspectRatio(16f / 9f), shape = ContinuousRoundedCornerShape(8.dp))
+                    }
+                    Text(
+                        Fmt.duration(c.startMs / 1000).ifEmpty { "0:00" },
+                        style = MaterialTheme.typography.labelMedium.withTabularFigures(),
+                        color = if (on) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        c.title,
+                        style = MaterialTheme.typography.labelLarge,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        color = if (on) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
         }
     }
 }

@@ -1,6 +1,9 @@
 package com.gpo.pipepaw.feature.player
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.runtime.collectAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -89,6 +92,17 @@ internal fun pageTrackInk(): TrackInk {
  */
 @Composable
 internal fun PawSeekBar(seek: SeekState, ink: TrackInk, onPoke: () -> Unit = {}, modifier: Modifier = Modifier) {
+    val chapters = Player.chapters
+    val skips = if (Segments.enabled.state.collectAsState().value) Player.skips else emptyList()
+    val skipColor = MaterialTheme.colorScheme.tertiary
+    // A segment just skipped closes up on the bar (§4 B): it shrinks to nothing about its middle.
+    val closing = remember { Animatable(1f) }
+    val lastSkip = Player.lastSkip
+    val closeSpec = YoinMotion.slowSpatialSpec<Float>(YoinMotionRole.Standard)
+    LaunchedEffect(lastSkip) {
+        closing.snapTo(1f)
+        if (lastSkip != null) closing.animateTo(0f, closeSpec)
+    }
     val haptics = LocalHapticFeedback.current
     var pressed by remember { mutableStateOf(false) }
     val grow by animateFloatAsState(
@@ -155,9 +169,32 @@ internal fun PawSeekBar(seek: SeekState, ink: TrackInk, onPoke: () -> Unit = {},
                 drawRoundRect(color, Offset(from, top), Size(len, th), CornerRadius(r, r))
             }
             val played = seek.fraction
+            val d = seek.duration.toFloat()
             bar(ink.rest, 0f, w)
             bar(ink.buffered, 0f, w * seek.bufferedFraction)
             bar(ink.played, 0f, w * played)
+            if (d > 0f) {
+                // SponsorBlock: each segment a block in the tertiary colour over the track.
+                for (sk in skips) {
+                    var a = w * (sk.startMs / d)
+                    var b = w * (sk.endMs / d).coerceAtMost(1f)
+                    if (sk.id == lastSkip?.id) {
+                        val mid = (a + b) / 2f
+                        val half = (b - a) / 2f * closing.value
+                        a = mid - half
+                        b = mid + half
+                    }
+                    if (b - a > 0.5f) drawRect(skipColor, Offset(a, top), Size(b - a, th))
+                }
+                // Chapters: a 2dp seam through the track at each start (§4 B: 章节是缝).
+                val gap = 2.dp.toPx()
+                for (c in chapters) {
+                    val f = c.startMs / d
+                    if (f <= 0.002f || f >= 0.998f) continue
+                    val x = w * f
+                    drawRect(Color.Black, Offset(x - gap / 2f, top - 1f), Size(gap, th + 2f), blendMode = BlendMode.Clear)
+                }
+            }
             if (grow > 0.01f) {
                 val x = w * played
                 val thumbW = 4.dp.toPx()
@@ -200,6 +237,21 @@ internal fun SeekBubbleLayer(seek: SeekState, frames: Frameset?, big: Boolean, m
                     if (frames != null) {
                         StoryboardFrame(frames, timeMs, width)
                         Spacer(Modifier.height(6.dp))
+                    }
+                    val chapter = Player.chapters.at(timeMs)
+                    if (chapter != null && chapter.title.isNotEmpty()) {
+                        Text(
+                            chapter.title,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .widthIn(max = width)
+                                .background(Color.Black.copy(alpha = 0.62f), YoinShapeTokens.Full)
+                                .padding(horizontal = 10.dp, vertical = 2.dp),
+                        )
+                        Spacer(Modifier.height(4.dp))
                     }
                     Text(
                         Fmt.duration(timeMs / 1000).ifEmpty { "0:00" },

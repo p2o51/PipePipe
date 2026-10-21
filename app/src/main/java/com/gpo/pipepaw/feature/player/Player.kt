@@ -20,6 +20,7 @@ import com.gpo.pipepaw.ui.components.friendlyMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.schabi.newpipe.extractor.stream.StreamInfo
@@ -119,7 +120,52 @@ object Player {
         }
     }
 
+    /** The video's chapters and SponsorBlock segments (empty until [session] has its info). */
+    var chapters by mutableStateOf<List<Chapter>>(emptyList())
+        private set
+    var skips by mutableStateOf<List<SkipSegment>>(emptyList())
+        private set
+
+    /** The segment just skipped (the bar closes it up; 撤销 goes back into it). */
+    var lastSkip by mutableStateOf<SkipSegment?>(null)
+        private set
+    private val skipped = HashSet<String>()
+    private var skipJob: Job? = null
+
+    /**
+     * SponsorBlock's auto skip: four times a second, a playhead inside a segment whose category
+     * is set to skip (and not skipped before in this video, so 撤销 and seeking back stay put)
+     * jumps to its end.
+     */
+    private fun watchSkips() {
+        skipJob?.cancel()
+        if (skips.isEmpty()) return
+        skipJob = scope.launch {
+            while (true) {
+                delay(250)
+                if (!exo.isPlaying) continue
+                val at = exo.currentPosition
+                val s = skips.firstOrNull { at >= it.startMs && at < it.endMs - 500 && it.category.skip.value && it.id !in skipped } ?: continue
+                skipped += s.id
+                exo.seekTo(s.endMs)
+                lastSkip = s
+            }
+        }
+    }
+
+    /** 撤销: back to the start of the skipped segment, which then plays. */
+    fun undoSkip() {
+        val s = lastSkip ?: return
+        exo.seekTo(s.startMs)
+        lastSkip = null
+    }
+
     private fun resetTracks(info: StreamInfo?) {
+        chapters = Segments.chapters(info)
+        skips = Segments.skips(info)
+        skipped.clear()
+        lastSkip = null
+        watchSkips()
         subtitleJob?.cancel()
         subtitleIndex = -1
         cues = emptyList()
