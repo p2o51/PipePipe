@@ -47,6 +47,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -128,14 +129,18 @@ fun PlayerOverlayHost() {
 
     LaunchedEffect(expanded) { progress.animateTo(if (expanded) 1f else 0f, spatial) }
 
-    // Expanded only: a collapsed bar never blocks the page's own back.
-    PredictiveBackHandler(enabled = expanded) { events ->
+    // Open at all (expanded, or left part-way by a drag): a collapsed bar never blocks the
+    // page's own back.
+    val open by remember { derivedStateOf { progress.value > 0.001f } }
+    PredictiveBackHandler(enabled = expanded || open) { events ->
+        val from = progress.value
         try {
-            events.collect { e -> progress.snapTo(1f - BackPreview * e.progress) }
+            events.collect { e -> progress.snapTo(from - BackPreview * e.progress) }
             // Commit (also the 3-button / no-gesture path: an empty flow lands here at once).
-            Player.expanded = false
+            if (Player.expanded) Player.expanded = false
+            else scope.launch { progress.animateTo(0f, spatial) }
         } catch (e: CancellationException) {
-            scope.launch { progress.animateTo(1f, spatial) }
+            scope.launch { progress.animateTo(from, spatial) }
             throw e
         }
     }
@@ -188,7 +193,11 @@ fun PlayerOverlayHost() {
             val drag = rememberDraggableState { delta ->
                 scope.launch { progress.snapTo((progress.value - delta / rangePx).coerceIn(0f, 1f)) }
             }
+            // The mini content fades out by p = 0.35; it stays composed while a drag that began
+            // on it runs, or its draggable would be disposed mid-drag and never settle.
+            var dragging by remember { mutableStateOf(false) }
             val settle: (Float) -> Unit = { velocity ->
+                dragging = false
                 val target = when {
                     velocity > FlingVelocity -> false
                     velocity < -FlingVelocity -> true
@@ -239,7 +248,7 @@ fun PlayerOverlayHost() {
 
                 // Mini bar content, right of the picture.
                 val miniAlpha = (1f - p / 0.35f).coerceIn(0f, 1f)
-                if (miniAlpha > 0f) {
+                if (miniAlpha > 0f || dragging) {
                     MiniContent(
                         session = session,
                         modifier = Modifier
@@ -248,7 +257,7 @@ fun PlayerOverlayHost() {
                             .height(MiniHeight)
                             .graphicsLayer { alpha = miniAlpha }
                             .clickable { Player.expanded = true }
-                            .draggable(drag, Orientation.Vertical, onDragStopped = { settle(it) }),
+                            .draggable(drag, Orientation.Vertical, onDragStarted = { dragging = true }, onDragStopped = { settle(it) }),
                     )
                 }
 
@@ -260,7 +269,7 @@ fun PlayerOverlayHost() {
                         .clip(ContinuousRoundedCornerShape(videoCorner))
                         .background(Color.Black)
                         .clickable(enabled = p < 0.5f) { Player.expanded = true }
-                        .draggable(drag, Orientation.Vertical, onDragStopped = { settle(it) }),
+                        .draggable(drag, Orientation.Vertical, onDragStarted = { dragging = true }, onDragStopped = { settle(it) }),
                 ) {
                     Picture(session)
                 }
