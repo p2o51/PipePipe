@@ -12,7 +12,7 @@
 
 ## 阶段 1 · 在 Mac 上跑通
 
-- [ ] 编译（AGP 9.2.1；Extractor 用 JDK 25 toolchain，app 本身 Java 17），修编译错误。若 Gradle 因 Extractor 的 JVM 25 属性拒绝解析依赖，把 app 也提到 25（和 PipePipeClient 一样）。
+- [x] 编译（AGP 9.2.1；Extractor 用 JDK 25 toolchain，app 本身 Java 17）。app 留在 17，Gradle 的变体匹配没有拒绝。根 settings 里的 foojay 管不到 includeBuild，所以机器上要有 JDK 25：在 `~/.gradle/gradle.properties` 里设 `org.gradle.java.installations.paths=<JDK 25 home>`。
 - [ ] 真机：搜索 → 播放 → 收起 → 进频道 → 订阅 → 首页，平板竖横屏各走一遍。
 - [ ] 确认未登录播放能拿到地址（签名和 n 参数现在走 PipePipe 的远程解码 API，`api.pipepipe.dev`）。
 - [ ] 把 Paw 套件对齐到 Mac 上 PiliPaw 0.4.30 的版本。

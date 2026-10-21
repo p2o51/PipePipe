@@ -114,8 +114,8 @@ object StreamResolver {
         val itag = stream.itagItem
         val manifest = runCatching {
             when (stream.deliveryMethod) {
-                DeliveryMethod.PROGRESSIVE_HTTP -> YoutubeProgressiveDashManifestCreator.fromProgressiveStreamingUrl(stream.content, itag, info.duration)
-                DeliveryMethod.DASH -> YoutubeOtfDashManifestCreator.fromOtfStreamingUrl(stream.content, itag, info.duration)
+                DeliveryMethod.PROGRESSIVE_HTTP -> YoutubeProgressiveDashManifestCreator.fromProgressiveStreamingUrl(stream.content, itag ?: return@runCatching null, info.duration)
+                DeliveryMethod.DASH -> YoutubeOtfDashManifestCreator.fromOtfStreamingUrl(stream.content, itag ?: return@runCatching null, info.duration)
                 else -> null
             }
         }.getOrNull()

@@ -69,7 +69,7 @@ object Player {
             .build()
             .apply {
                 addListener(object : Media3Player.Listener {
-                    override fun onIsPlayingChanged(playing: Boolean) { isPlaying = playing }
+                    override fun onIsPlayingChanged(playing: Boolean) { this@Player.isPlaying = playing }
                     override fun onPlaybackStateChanged(state: Int) {
                         isBuffering = state == Media3Player.STATE_BUFFERING
                         if (state == Media3Player.STATE_READY) durationMs = duration.coerceAtLeast(0)
