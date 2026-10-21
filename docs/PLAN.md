@@ -45,7 +45,8 @@
 
 ## 阶段 3 · 内容
 
-- [ ] 评论（底部面板 / 平板右栏）、章节、SponsorBlock、ReturnYouTubeDislike。
+- [x] 评论（`feature/comments`）：手机是详情下「评论」一行 → 底部面板，平板双栏右栏「相关 / 评论」切换；热门 / 最新（最新取评论头里第二个排序的 continuation，再交给 Extractor 翻页）；置顶、UP 主点心标签；回复就地展开、可翻页；长评论六行折叠「展开」；评论里的「1:23」点了跳转。
+- [ ] 章节、SponsorBlock、ReturnYouTubeDislike。
 - [ ] 段落进度条（设计主张 §4 B）。
 - [ ] 历史、稍后再看、播放列表（本机）。
 - [ ] 自建 Feed、静音规则、搜索筛选。

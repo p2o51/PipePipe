@@ -82,7 +82,7 @@ object YtFeeds {
     }
 
     /** Every object under a key anywhere in [json], depth first (renderers nest at varying depths). */
-    private fun walk(json: Any?, visit: (String, JsonObject) -> Unit) {
+    internal fun walk(json: Any?, visit: (String, JsonObject) -> Unit) {
         when (json) {
             is JsonObject -> for ((k, v) in json) {
                 if (v is JsonObject) visit(k, v)

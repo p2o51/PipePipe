@@ -20,6 +20,7 @@ import org.schabi.newpipe.extractor.search.SearchInfo
 import org.schabi.newpipe.extractor.stream.StreamInfo
 import org.schabi.newpipe.extractor.stream.StreamInfoItem
 import java.util.Locale
+import org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
 import com.gpo.pipepaw.core.account.Accounts
 import com.gpo.pipepaw.core.account.Profile
 import kotlinx.coroutines.MainScope
@@ -104,14 +105,56 @@ object Yt {
 
     // ── Comments ────────────────────────────────────────────────────────────
 
-    suspend fun comments(videoUrl: String, cursor: String?): Page<CommentsInfoItem> = io {
-        if (cursor == null) {
+    /**
+     * A page of [videoUrl]'s comments, 热门 (the extractor's own first page) or [newest] (最新:
+     * the comments header's second sort, whose continuation the extractor then pages like any other).
+     */
+    suspend fun comments(videoUrl: String, cursor: String?, newest: Boolean = false): Page<CommentsInfoItem> = io {
+        if (cursor == null && !newest) {
             val info = CommentsInfo.getInfo(service, videoUrl)
             page(info.relatedItems, info.nextPage)
         } else {
-            val more = CommentsInfo.getMoreItems(service, videoUrl, Cursors.take(cursor))
+            val next = if (cursor != null) Cursors.take(cursor) else ExtractorPage(videoUrl, newestCommentsToken(videoUrl) ?: return@io Page(emptyList(), hasMore = false))
+            val more = CommentsInfo.getMoreItems(service, videoUrl, next)
             page(more.items, more.nextPage)
         }
+    }
+
+    /** A thread's replies (the item's own replies page, then its continuations). */
+    suspend fun replies(videoUrl: String, cursor: String): Page<CommentsInfoItem> = io {
+        val more = CommentsInfo.getMoreItems(service, videoUrl, Cursors.take(cursor))
+        page(more.items, more.nextPage)
+    }
+
+    /** The opaque cursor for a comment's replies page, or null when it has none. */
+    fun repliesCursor(item: CommentsInfoItem): String? = item.replies?.takeIf { ExtractorPage.isValid(it) }?.let { Cursors.put(it) }
+
+    /** The 最新 sort's continuation: the watch page's comments token, then the header's second sort item. */
+    private fun newestCommentsToken(videoUrl: String): String? {
+        val id = service.streamLHFactory.fromUrl(videoUrl).id
+        val loc = NewPipe.getPreferredLocalization()
+        val country = NewPipe.getPreferredContentCountry()
+        fun next(build: com.grack.nanojson.JsonBuilder<com.grack.nanojson.JsonObject>.() -> Unit): com.grack.nanojson.JsonObject {
+            val builder = YoutubeParsingHelper.prepareDesktopJsonBuilder(loc, country)
+            builder.build()
+            return YoutubeParsingHelper.getJsonPostResponse("next", com.grack.nanojson.JsonWriter.string(builder.done()).toByteArray(), loc)
+        }
+        var first: String? = null
+        YtFeeds.walk(next { value("videoId", id) }) { key, v ->
+            if (first == null && key == "itemSectionRenderer" && v.getString("targetId") == "comments-section") {
+                first = v.getArray("contents").getObject(0).getObject("continuationItemRenderer")
+                    .getObject("continuationEndpoint").getObject("continuationCommand").getString("token")
+            }
+        }
+        val token = first ?: return null
+        var newest: String? = null
+        YtFeeds.walk(next { value("continuation", token) }) { key, v ->
+            if (newest == null && key == "sortFilterSubMenuRenderer") {
+                newest = v.getArray("subMenuItems").getObject(1).getObject("serviceEndpoint")
+                    .getObject("continuationCommand").getString("token")
+            }
+        }
+        return newest
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────

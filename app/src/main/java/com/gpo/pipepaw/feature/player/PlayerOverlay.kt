@@ -83,6 +83,15 @@ import com.gpo.pipepaw.core.extractor.ChannelItem
 import com.gpo.pipepaw.core.extractor.toVideo
 import com.gpo.pipepaw.core.settings.AppSettings
 import com.gpo.pipepaw.core.util.Fmt
+import com.gpo.pipepaw.ui.components.FameCount
+import com.gpo.pipepaw.ui.components.sheetBottomPadding
+import com.gpo.pipepaw.ui.components.rememberSheetProperties
+import com.gpo.pipepaw.feature.settings.ConnectedToggleRow
+import com.gpo.pipepaw.feature.settings.Choice
+import com.gpo.pipepaw.feature.comments.rememberCommentsState
+import com.gpo.pipepaw.feature.comments.CommentsList
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.ModalBottomSheet
 import com.gpo.pipepaw.ui.components.rememberToast
 import com.gpo.pipepaw.ui.components.friendlyMessage
 import com.gpo.pipepaw.core.account.AccountSubscriptions
@@ -419,6 +428,8 @@ private fun FullContent(
     val related = remember(info) {
         info?.relatedItems.orEmpty().filterIsInstance<StreamInfoItem>().map { it.toVideo() }
     }
+    val comments = rememberCommentsState(session.url)
+    val onSeek: (Long) -> Unit = { Player.exo.seekTo(it * 1000) }
     if (twoPane) {
         Row(Modifier.fillMaxSize()) {
             Column(
@@ -433,16 +444,31 @@ private fun FullContent(
                 Controls(seek, onCollapse)
                 Details(session, info)
             }
-            val listState = rememberLazyListState()
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxHeight().width(RelatedPaneWidth),
-                contentPadding = PaddingValues(top = statusTop + 16.dp, bottom = navBottom + 24.dp),
-            ) {
-                items(related, key = { it.url }) { VideoRow(it, thumbWidth = 144.dp) }
+            // The right column: 相关 or 评论.
+            var showComments by rememberSaveable(session.url) { mutableStateOf(false) }
+            Column(Modifier.fillMaxHeight().width(RelatedPaneWidth).padding(top = statusTop + 12.dp)) {
+                ConnectedToggleRow(
+                    choices = listOf(Choice(false, "相关"), Choice(true, "评论")),
+                    selected = showComments,
+                    onSelect = { showComments = it },
+                    modifier = Modifier.padding(start = 8.dp, end = 24.dp, bottom = 8.dp),
+                )
+                if (showComments) {
+                    CommentsList(comments, onSeek, Modifier.fillMaxSize(), PaddingValues(bottom = navBottom + 24.dp))
+                } else {
+                    val listState = rememberLazyListState()
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = navBottom + 24.dp),
+                    ) {
+                        items(related, key = { it.url }) { VideoRow(it, thumbWidth = 144.dp) }
+                    }
+                }
             }
         }
     } else {
+        var sheet by rememberSaveable(session.url) { mutableStateOf(false) }
         Column(Modifier.fillMaxSize().padding(top = topUnderVideo)) {
             Controls(seek, onCollapse, Modifier.padding(horizontal = 16.dp))
             LazyColumn(
@@ -450,9 +476,40 @@ private fun FullContent(
                 contentPadding = PaddingValues(bottom = navBottom + 24.dp),
             ) {
                 item(key = "details") { Details(session, info, Modifier.padding(horizontal = 16.dp)) }
+                item(key = "comments") { CommentsEntry(-1) { sheet = true } }
                 items(related, key = { it.url }) { VideoRow(it) }
             }
         }
+        if (sheet) {
+            ModalBottomSheet(onDismissRequest = { sheet = false }, properties = rememberSheetProperties()) {
+                CommentsList(comments, onSeek, Modifier.fillMaxWidth(), PaddingValues(bottom = sheetBottomPadding())) {
+                    item(key = "title") {
+                        Text("评论", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** 评论 (and how many) as a tonal row under the details; opens the sheet. */
+@Composable
+private fun CommentsEntry(count: Long, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .fillMaxWidth()
+            .clip(ContinuousRoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text("评论", style = MaterialTheme.typography.titleSmall)
+        if (count >= 0) FameCount(Fmt.count(count), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.weight(1f))
+        Icon(YoinSymbols.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
