@@ -37,8 +37,7 @@ import com.gpo.pipepaw.feature.player.Player
 import com.gpo.pipepaw.navigation.LocalNavigator
 import com.gpo.pipepaw.navigation.Route
 import com.gpo.pipepaw.ui.theme.ContinuousRoundedCornerShape
-import com.gpo.yoin.symbols.PiliSymbols
-
+import com.gpo.yoin.symbols.YoinSymbols
 /** Covers in cards: 12dp continuous corners, bare (no border). */
 val CardCoverShape = ContinuousRoundedCornerShape(12.dp)
 
@@ -186,7 +185,7 @@ private fun MetaLine(video: VideoItem, showChannel: Boolean) {
         }
         if (video.views >= 0) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                Icon(PiliSymbols.Views, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(YoinSymbols.Views, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 FameCount(Fmt.count(video.views), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, revealable = false)
             }
         }

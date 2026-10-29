@@ -10,7 +10,7 @@ Yoin 以封面为中心，PiliPaw 以播放器为中心，WeiPaw 以「一行一
 - 名字暂定 PipePaw，包名 `com.gpo.pipepaw`（取上游客户端名，和 PiliPaw 同一规则；待 owner 在卡片上确认）。
 - 播放器是**壳里的覆盖层**，不是页面（讨论稿问题 2 的推荐）：Yoin Now Playing 的 ShellOverlayDown，迷你条 ⇄ 全屏是同一条进度。
 - 不登录也完整：订阅、历史、稍后再看全在本机。登录（mweb + SABR）是后面的可选项。
-- Paw 套件先从 PiliPaw 拷（主题、seam、页面转场、FameCount、设置套件、yoin-symbols），不抽库（讨论稿问题 4 暂按「速度优先」）。
+- Paw 套件先从 PiliPaw 拷（主题、seam、页面转场、FameCount、设置套件），不抽库（讨论稿问题 4 暂按「速度优先」）。图标例外：2026-10-29 起和 Yoin、其他 Paw 一样直接用 yoin-symbols 库（`includeBuild ../yoin-symbols`），不再拷贝。
 
 ## 1. 形态：画面一直在
 

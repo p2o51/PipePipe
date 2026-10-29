@@ -37,7 +37,6 @@ import com.gpo.pipepaw.feature.subscriptions.SubscriptionsScreen
 import com.gpo.pipepaw.ui.components.LocalBottomBarInset
 import com.gpo.pipepaw.ui.components.seam.ProvideSeamBarField
 import com.gpo.pipepaw.ui.theme.YoinMotion
-import com.gpo.yoin.symbols.PiliSymbols
 import com.gpo.yoin.symbols.YoinSymbols
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -76,7 +75,7 @@ fun MainShell() {
     val tabs = listOf(
         NavTab("首页", YoinSymbols.Home, YoinSymbols.HomeFilled),
         NavTab("订阅", YoinSymbols.Library, YoinSymbols.LibraryFilled),
-        NavTab("我的", YoinSymbols.Person, PiliSymbols.PersonFilled),
+        NavTab("我的", YoinSymbols.Person, YoinSymbols.PersonFilled),
     )
     var selected by rememberSaveable { mutableIntStateOf(0) }
     val holder = rememberSaveableStateHolder()

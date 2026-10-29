@@ -43,8 +43,11 @@ but never ship motion that is wrong: a still screen beats a broken animation. UI
 - Paw kit (copied from PiliPaw, keep in sync by hand): `ui/theme` (`PawTheme`, `CoverTheme`,
   `YoinMotion`, shapes, type), `ui/components` (`NetImage`, `Avatar`, `Pager`/`LoadMoreEffect`,
   `RefreshBox`, states, `FameCount`, `PawTopBar`, `ExpressivePageBackground`, seams),
-  `navigation/transition` (in-window AOSP back replica), `feature/settings/SettingsKit.kt`,
-  `yoin-symbols` (`YoinSymbols.*`, `PiliSymbols.*`; no material-icons).
+  `navigation/transition` (in-window AOSP back replica), `feature/settings/SettingsKit.kt`.
+- Icons: `com.gpo.yoin.symbols.YoinSymbols.*` only, from the Yoin Symbols library (sibling
+  `../yoin-symbols` via `includeBuild`, else Maven Central; the gallery lists every symbol). No
+  material-icons. Never draw an ImageVector in the app or copy symbol files: a missing glyph is
+  added to `../yoin-symbols` first (see AGENTS.md).
 
 ## Yoin rules (the point of the project)
 Same twelve rules as PiliPaw's `docs/AGENT_BRIEF.md` (M3 Expressive components first, springs

@@ -20,7 +20,6 @@ import com.gpo.pipepaw.ui.components.rememberToast
 import com.gpo.pipepaw.core.settings.AppSettings
 import com.gpo.pipepaw.ui.components.FameMode
 import com.gpo.pipepaw.ui.components.FameScope
-import com.gpo.yoin.symbols.PiliSymbols
 import com.gpo.yoin.symbols.YoinSymbols
 
 /** 设置 as a pushed page (the 我的 tab shows the same list in place). */
@@ -58,7 +57,7 @@ fun SettingsList(title: String, showBack: Boolean = false, bottom: Dp = 0.dp) {
                     item {
                         SettingsItem(
                             title = list.title,
-                            icon = if (list == com.gpo.pipepaw.feature.account.AccountList.WatchLater) PiliSymbols.WatchLater else PiliSymbols.ThumbUp,
+                            icon = if (list == com.gpo.pipepaw.feature.account.AccountList.WatchLater) YoinSymbols.WatchLater else YoinSymbols.ThumbUp,
                             onClick = { nav.push(com.gpo.pipepaw.navigation.Route.AccountVideos(list.name)) },
                         )
                     }
@@ -67,12 +66,12 @@ fun SettingsList(title: String, showBack: Boolean = false, bottom: Dp = 0.dp) {
         }
         SettingsGroup("本机") {
             item {
-                SettingsItem(title = "历史记录", icon = PiliSymbols.History, onClick = { nav.push(com.gpo.pipepaw.navigation.Route.LocalList("History")) })
+                SettingsItem(title = "历史记录", icon = YoinSymbols.History, onClick = { nav.push(com.gpo.pipepaw.navigation.Route.LocalList("History")) })
             }
             // Signed in, 稍后再看 is the account's (above); signed out it is this device's.
             if (!signedIn) {
                 item {
-                    SettingsItem(title = "稍后再看", icon = PiliSymbols.WatchLater, onClick = { nav.push(com.gpo.pipepaw.navigation.Route.LocalList("WatchLater")) })
+                    SettingsItem(title = "稍后再看", icon = YoinSymbols.WatchLater, onClick = { nav.push(com.gpo.pipepaw.navigation.Route.LocalList("WatchLater")) })
                 }
             }
             item {
@@ -83,17 +82,17 @@ fun SettingsList(title: String, showBack: Boolean = false, bottom: Dp = 0.dp) {
             item {
                 SettingsToggleItem(
                     title = "深浅",
-                    icon = PiliSymbols.DarkMode,
+                    icon = YoinSymbols.DarkMode,
                     choices = listOf(Choice(0, "跟随系统"), Choice(1, "浅色"), Choice(2, "深色")),
                     selected = themeMode,
                     onSelect = { AppSettings.set(AppSettings.themeMode, it) },
                 )
             }
-            item { SettingsSwitchItem("壁纸配色", dynamic, { AppSettings.set(AppSettings.dynamicColor, it) }, icon = PiliSymbols.Palette) }
-            item { SettingsSwitchItem("封面取色", cover, { AppSettings.set(AppSettings.coverColor, it) }, icon = PiliSymbols.Image) }
+            item { SettingsSwitchItem("壁纸配色", dynamic, { AppSettings.set(AppSettings.dynamicColor, it) }, icon = YoinSymbols.Palette) }
+            item { SettingsSwitchItem("封面取色", cover, { AppSettings.set(AppSettings.coverColor, it) }, icon = YoinSymbols.Image) }
         }
         SettingsGroup("内容") {
-            item { SettingsSwitchItem("隐藏 Shorts", hideShorts, { AppSettings.set(AppSettings.hideShorts, it) }, icon = PiliSymbols.Video) }
+            item { SettingsSwitchItem("隐藏 Shorts", hideShorts, { AppSettings.set(AppSettings.hideShorts, it) }, icon = YoinSymbols.Video) }
             item { SettingsItem(title = "屏蔽", icon = YoinSymbols.VisibilityOff, onClick = { nav.push(com.gpo.pipepaw.navigation.Route.Mutes) }) }
             item {
                 SettingsToggleItem(
@@ -108,11 +107,11 @@ fun SettingsList(title: String, showBack: Boolean = false, bottom: Dp = 0.dp) {
         SettingsGroup("播放") {
             item { SettingsSwitchItem("自动播放", autoPlay, { AppSettings.set(AppSettings.autoPlay, it) }, icon = YoinSymbols.PlayCircle) }
             item { SettingsSwitchItem("后台播放", backgroundPlay, { AppSettings.set(AppSettings.backgroundPlay, it) }, icon = YoinSymbols.VolumeUp) }
-            item { SettingsSwitchItem("自动画中画", autoPip, { AppSettings.set(AppSettings.autoPip, it) }, icon = PiliSymbols.Pip) }
+            item { SettingsSwitchItem("自动画中画", autoPip, { AppSettings.set(AppSettings.autoPip, it) }, icon = YoinSymbols.Pip) }
             item {
                 SettingsChoiceItem(
                     title = "默认画质",
-                    icon = PiliSymbols.Hd,
+                    icon = YoinSymbols.Hd,
                     choices = listOf(2160, 1440, 1080, 720, 480, 360).map { Choice(it, "${it}p") } + Choice(0, "最高"),
                     selected = height,
                     onSelect = { AppSettings.set(AppSettings.preferredHeight, it) },
@@ -124,7 +123,7 @@ fun SettingsList(title: String, showBack: Boolean = false, bottom: Dp = 0.dp) {
                 SettingsSwitchItem("标出片段", sbEnabled, {
                     AppSettings.set(com.gpo.pipepaw.feature.player.Segments.enabled, it)
                     com.gpo.pipepaw.feature.player.Segments.configure()
-                }, icon = PiliSymbols.Video)
+                }, icon = YoinSymbols.Video)
             }
             com.gpo.pipepaw.feature.player.SbCategory.entries.forEach { c ->
                 item {
@@ -152,7 +151,7 @@ fun SettingsList(title: String, showBack: Boolean = false, bottom: Dp = 0.dp) {
             }
             item {
                 SettingsLinkItem(
-                    icon = PiliSymbols.Link,
+                    icon = YoinSymbols.Link,
                     title = "PipePipe",
                     summary = "GPL-3.0",
                     onClick = { openTab(context, "https://github.com/InfinityLoop1308/PipePipe") },

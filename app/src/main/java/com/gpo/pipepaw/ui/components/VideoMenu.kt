@@ -25,7 +25,6 @@ import com.gpo.pipepaw.core.extractor.VideoItem
 import com.gpo.pipepaw.feature.library.AddToPlaylistSheet
 import com.gpo.pipepaw.feature.library.Library
 import com.gpo.pipepaw.feature.mute.Mutes
-import com.gpo.yoin.symbols.PiliSymbols
 import com.gpo.yoin.symbols.YoinSymbols
 
 /**
@@ -49,7 +48,7 @@ fun VideoMenuSheet(video: VideoItem, onDismiss: () -> Unit) {
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
             )
-            MenuRow(PiliSymbols.WatchLater, if (Library.inWatchLater(video.url)) "移出稍后再看" else "稍后再看") {
+            MenuRow(YoinSymbols.WatchLater, if (Library.inWatchLater(video.url)) "移出稍后再看" else "稍后再看") {
                 toast(if (Library.toggleWatchLater(video)) "已加入稍后再看" else "已移出稍后再看")
                 onDismiss()
             }

@@ -58,7 +58,6 @@ import com.gpo.pipepaw.ui.components.Avatar
 import com.gpo.pipepaw.ui.components.FameCount
 import com.gpo.pipepaw.ui.components.Page
 import com.gpo.pipepaw.ui.components.Pager
-import com.gpo.yoin.symbols.PiliSymbols
 import com.gpo.yoin.symbols.YoinSymbols
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -251,7 +250,7 @@ private fun CommentRow(c: Comment, state: CommentsState, onSeek: (Long) -> Unit,
             ClampedText(c, onSeek, Modifier.padding(top = 4.dp))
             if (c.likes > 0) {
                 Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(PiliSymbols.ThumbUp, null, Modifier.size(14.dp), tint = scheme.onSurfaceVariant)
+                    Icon(YoinSymbols.ThumbUp, null, Modifier.size(14.dp), tint = scheme.onSurfaceVariant)
                     Spacer(Modifier.width(4.dp))
                     FameCount(Fmt.count(c.likes), style = MaterialTheme.typography.labelMedium, color = scheme.onSurfaceVariant)
                 }
