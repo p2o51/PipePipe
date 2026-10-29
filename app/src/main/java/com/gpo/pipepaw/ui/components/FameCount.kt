@@ -50,7 +50,6 @@ import androidx.compose.ui.unit.offset
 import androidx.compose.ui.unit.sp
 import com.gpo.pipepaw.core.settings.AppSettings
 import com.gpo.pipepaw.ui.theme.YoinMotion
-import com.gpo.yoin.symbols.PiliSymbols
 import com.gpo.yoin.symbols.YoinSymbols
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -170,16 +169,16 @@ fun fameHides(ownerMid: Long? = null): Boolean =
 /** [Stat] glyphs whose numbers are popularity: 名声模式 hides them by default. */
 private val PopularityGlyphs: List<ImageVector> by lazy {
     listOf(
-        PiliSymbols.Views,
-        PiliSymbols.Danmaku,
-        PiliSymbols.ThumbUp,
-        PiliSymbols.ThumbUpFilled,
-        PiliSymbols.Coin,
-        PiliSymbols.CoinFilled,
-        PiliSymbols.Forward,
-        PiliSymbols.Live,
-        PiliSymbols.PersonFilled,
-        PiliSymbols.Fire,
+        YoinSymbols.Views,
+        YoinSymbols.Danmaku,
+        YoinSymbols.ThumbUp,
+        YoinSymbols.ThumbUpFilled,
+        YoinSymbols.Coin,
+        YoinSymbols.CoinFilled,
+        YoinSymbols.Forward,
+        YoinSymbols.Live,
+        YoinSymbols.PersonFilled,
+        YoinSymbols.Fire,
         YoinSymbols.Star,
         YoinSymbols.StarFilled,
         YoinSymbols.Share,

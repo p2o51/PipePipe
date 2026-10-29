@@ -5,7 +5,6 @@
 .gradle/
 build/
 /app/build/
-/yoin-symbols/build/
 local.properties
 *.iml
 .kotlin/

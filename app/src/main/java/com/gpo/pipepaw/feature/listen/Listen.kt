@@ -127,7 +127,6 @@ import com.gpo.pipepaw.ui.theme.LocalPageBackdrop
 import com.gpo.pipepaw.ui.theme.YoinMotion
 import com.gpo.pipepaw.ui.theme.YoinMotionRole
 import com.gpo.pipepaw.ui.theme.withTabularFigures
-import com.gpo.yoin.symbols.PiliSymbols
 import com.gpo.yoin.symbols.SymbolPlayMode
 import com.gpo.yoin.symbols.YoinSymbols
 import com.gpo.yoin.symbols.rememberPlayModeSymbolPainter
@@ -214,7 +213,7 @@ fun ListenScreen(from: () -> Rect?) {
                     ListenTransport(controlSize = 56.dp, horizontalPadding = 0.dp)
                     Spacer(Modifier.height(8.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        QuietAction(PiliSymbols.Comment, "评论") { sheet = ListenSheet.Comments }
+                        QuietAction(YoinSymbols.Comment, "评论") { sheet = ListenSheet.Comments }
                         QuietAction(YoinSymbols.Tv, "显示画面") { Player.changeAudioOnly(false) }
                     }
                 }

@@ -71,7 +71,7 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":yoin-symbols"))
+    implementation(libs.yoin.symbols)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     // PipePipe's extractor (composite build of the PipePipeExtractor submodule).

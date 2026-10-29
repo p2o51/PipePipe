@@ -8,7 +8,10 @@ to another app. Personal project, never published to any store.
   `PipePipeClient` is a read-only reference for APIs and features; its UI is not used.
   PipePipe's own README is kept as [README.upstream.md](README.upstream.md).
 - **UI**: Jetpack Compose, rewritten by Yoin's rules (p2o51/Yoin), with the Paw kit copied
-  from PiliPaw (theme, seam dissolve, page transitions, FameCount, yoin-symbols).
+  from PiliPaw (theme, seam dissolve, page transitions, FameCount).
+- **Icons**: [Yoin Symbols](https://github.com/p2o51/yoin-symbols) (MIT), every icon. With a
+  checkout at `../yoin-symbols` Gradle builds it from source (so new symbols work before a
+  release); otherwise it uses `io.github.p2o51:yoin-symbols` from Maven Central.
 - **Docs**: [设计主张](docs/design.md) · [AGENT_BRIEF](docs/AGENT_BRIEF.md) · [计划](docs/PLAN.md)
 
 ## Build

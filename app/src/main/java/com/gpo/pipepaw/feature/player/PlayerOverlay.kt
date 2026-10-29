@@ -123,7 +123,6 @@ import com.gpo.pipepaw.ui.shell.floatingBarInset
 import com.gpo.pipepaw.ui.theme.ContinuousRoundedCornerShape
 import com.gpo.pipepaw.ui.theme.CoverTheme
 import com.gpo.pipepaw.ui.theme.YoinMotion
-import com.gpo.yoin.symbols.PiliSymbols
 import com.gpo.yoin.symbols.YoinSymbols
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -566,7 +565,7 @@ private fun Controls(seek: SeekState, onCollapse: () -> Unit, modifier: Modifier
             }
             if (sheet) PlaybackSheet(onDismiss = { sheet = false })
             IconButton(onClick = { Player.fullscreen = true }, shapes = IconButtonDefaults.shapes()) {
-                Icon(PiliSymbols.Fullscreen, "全屏")
+                Icon(YoinSymbols.Fullscreen, "全屏")
             }
             FilledTonalIconButton(onClick = Player::toggle, shapes = IconButtonDefaults.shapes()) {
                 Icon(if (Player.isPlaying) YoinSymbols.PauseFilled else YoinSymbols.PlayFilled, if (Player.isPlaying) "暂停" else "播放")
@@ -656,7 +655,7 @@ private fun VideoActions(info: StreamInfo) {
                 toast(if (Library.toggleWatchLater(video)) "已加入稍后再看" else "已移出稍后再看")
             }
         }) {
-            Icon(if (inLater) YoinSymbols.Check else PiliSymbols.WatchLater, null, Modifier.size(18.dp))
+            Icon(if (inLater) YoinSymbols.Check else YoinSymbols.WatchLater, null, Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
             Text("稍后再看")
         }
