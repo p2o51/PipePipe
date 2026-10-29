@@ -1,96 +1,29 @@
-<hr>
-<p align="center"><img src="assets/logo.png" width="150"></p> 
-<h2 align="center"><b>PipePipe</b></h2>
-<h4 align="center">
-NewPipe, reimagined: faster, more stable, and packed with more features.</h4>
-<p align="center"><a href="https://f-droid.org/packages/InfinityLoop1309.NewPipeEnhanced/"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid"  width="207" /></a>
-<a href="https://apt.izzysoft.de/fdroid/index/apk/InfinityLoop1309.NewPipeEnhanced"><img src="assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" width="207" /></a></p>
-<hr>
+# PipePaw
 
-## Beyond NewPipe
+A YouTube client in the Paw family (PiliPaw, WeiPaw): Yoin-quality thinking and design brought
+to another app. Personal project, never published to any store.
 
-#### YouTube Enhancements
-* Integrate SponsorBlock for skipping sponsored segments (YouTube & BiliBili) 
-* Restore YouTube dislikes with ReturnYouTubeDislike 
-* Show original titles on YouTube (non-localized) 
-* Log in to access restricted or premium content 
+- **Upstream**: [PipePipe](https://github.com/InfinityLoop1308/PipePipe) by InfinityLoop1308, GPL-3.0.
+  Only its extractor is linked (`PipePipeExtractor`, a composite build of the submodule).
+  `PipePipeClient` is a read-only reference for APIs and features; its UI is not used.
+  PipePipe's own README is kept as [README.upstream.md](README.upstream.md).
+- **UI**: Jetpack Compose, rewritten by Yoin's rules (p2o51/Yoin), with the Paw kit copied
+  from PiliPaw (theme, seam dissolve, page transitions, FameCount).
+- **Icons**: [Yoin Symbols](https://github.com/p2o51/yoin-symbols) (MIT), every icon. Gradle builds it
+  from source from a checkout at `../yoin-symbols` and stops without it.
+- **Docs**: [设计主张](docs/design.md) · [AGENT_BRIEF](docs/AGENT_BRIEF.md) · [计划](docs/PLAN.md)
 
-#### Media Features
-* Display live chats in danmaku-style overlays
-* Support AV1 and VP9 codecs for efficient, high-quality playback 
-* Enable music player mode with background playback 
+## Build
 
-#### Filtering
-* Apply advanced search filters for better discovery 
-* Filter out unwanted items by keywords or channels 
-* Block shorts and paid videos for a cleaner feed 
+```sh
+git submodule update --init PipePipeExtractor PipePipeClient
+git clone https://github.com/p2o51/yoin-symbols ../yoin-symbols   # icons; `git -C ../yoin-symbols pull` for updates
+./gradlew :app:assembleDebug
+```
 
-#### Playback Controls
-* Use swipe-to-seek and fullscreen gestures for intuitive navigation 
-* Long-press to speed up playback 
-* Set a sleep timer for bedtime listening 
+Needs a JDK 25 toolchain for the extractor (Gradle's foojay resolver provisions one when the
+machine has none) and Android SDK 36.
 
-#### Enhanced Playlists
-* Download full playlists at once 
-* Search and sort within local playlists and histories
+## License
 
-... and many more improvements!
-
-
-## Screenshots
-
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/00-v2.png" width=640>](fastlane/metadata/android/en-US/images/phoneScreenshots/00-v1.png)
-
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/01-v3.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/01-v3.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/02-v3.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/02-v3.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/03-v3.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/03-v3.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/04-v3.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/04-v3.png)
-<br/>
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/05-v3.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/05-v3.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/06-v3.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/06-v3.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/07-v3.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/07-v3.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/08-v3.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/08-v3.png)
-<br/>
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/09-v3.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/09-v3.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/10-v3.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/10-v3.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/11-v3.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/11-v3.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/12-v3.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/12-v3.png)
-
-
-## About this fork
-
-Due to differences in development philosophy, I forked NewPipe in early 2022 and began independent development based on it.
-
-This means that PipePipe neither receives updates from NewPipe nor pushes updates to NewPipe. They have become two separate projects. Issues that occur in NewPipe don't necessarily happen in PipePipe, and changes made in NewPipe may not be adopted by PipePipe. In contrast, forks like Tubular track the latest version of NewPipe and develop based on it.
-
-Making a hard fork allows us to effectively address issues with quick fixes and maintain frequent feature updates.
-
-## About sign in
-
-PipePipe will ONLY use the login cookie for the specified scenarios you set. You can configure it in "Cookie Functions."
-
-For YouTube, the cookie will only be used when retrieving playback streams.
-
-## Contribute
-
-Issues and PRs are welcomed. Please note that I will **NOT** accept service requests. 
-
-Anyone interested in creating their own service is encouraged to fork this repository.
-
-## Donation
-
-If you find PipePipe useful, please consider becoming a supporter on Ko-Fi. Your support is important to me and helps me add more exciting new features. Every bit counts! 😇
-
-Liberapay: https://liberapay.com/PipePipe
-
-Ko-fi: https://ko-fi.com/pipepipe
-
-## Community
-
-[PipePipe Wiki](https://priveetee.github.io/Docs-PipePipe) maintained by [@Priveetee](https://github.com/Priveetee)
-
-## Special Thanks
-
-[Priveetee](https://github.com/Priveetee) for [researching SABR](https://priveetee.github.io/Docs-PipePipe/developer-guide/introduction.html) and implementing support for it.
-
-[AioiLight](https://github.com/AioiLight) for providing some code of NicoNico service.
+GPL-3.0, as upstream (see [LICENSE](LICENSE)).
